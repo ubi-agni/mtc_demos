@@ -63,6 +63,7 @@ void createTask(Task& t) {
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 
 	auto cartesian = std::make_shared<solvers::CartesianPath>();
+	cartesian->setProperty("jump_threshold", 0.0);
 
 	Stage* referenced_stage = nullptr;
 	{
@@ -188,10 +189,10 @@ void createTask(Task& t) {
 
 		// TODO: specify that attached object should move to a specific location
 		geometry_msgs::PoseStamped target;
-		target.header.frame_id = "world";
-		target.pose.position.x = 0.5;
-		target.pose.position.y = 0.4;
-		target.pose.position.z = 0.1;
+		target.header.frame_id = "yumi_body";
+		target.pose.position.x = 0.45;
+		target.pose.position.y = 0.45;
+		target.pose.position.z = 0.151;
 		target.pose.orientation.x = -0.5;
 		target.pose.orientation.y = 0.5;
 		target.pose.orientation.z = -0.5;
