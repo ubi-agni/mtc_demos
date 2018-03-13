@@ -3,6 +3,7 @@
 #include <moveit/task_constructor/stages/current_state.h>
 #include <moveit/task_constructor/stages/connect.h>
 #include <moveit/task_constructor/stages/move_to.h>
+#include <moveit/task_constructor/stages/move_relative.h>
 #include <moveit/task_constructor/stages/simple_grasp.h>
 #include <moveit/task_constructor/stages/pick.h>
 #include <moveit/task_constructor/solvers/cartesian_path.h>
@@ -118,10 +119,26 @@ void createTask(Task& t) {
 	}
 
 	/************************************************************************************/
-	tool_frame = "yumi_link_7_l";
-	eef = "left_hand";
-	arm = "left_arm";
 	{
+		// release object with right hand
+		auto ungrasp = std::make_unique<stages::SimpleUnGrasp>();
+		ungrasp->properties().configureInitFrom(Stage::PARENT, {"object"});
+		ungrasp->setProperty("eef", eef);
+		ungrasp->setPreGraspPose("open");
+		ungrasp->setGraspPose("closed");
+		ungrasp->remove(-1);  // remove last stage (pose generator)
+
+		// retract right hand
+		auto retract = std::make_unique<stages::MoveRelative>("retract", cartesian);
+		retract->restrictDirection(stages::MoveRelative::FORWARD);
+		retract->setProperty("group", arm);
+		retract->setProperty("marker_ns", std::string("retract"));
+		ungrasp->insert(std::move(retract), -1);  // insert retract as last stage in ungrasp
+
+		tool_frame = "yumi_link_7_l";
+		eef = "left_hand";
+		arm = "left_arm";
+
 		// connect to pick
 		stages::Connect::GroupPlannerVector planners = {{eef, pipeline}, {arm, pipeline}};
 		auto connect = std::make_unique<stages::Connect>("connect", planners);
@@ -138,6 +155,8 @@ void createTask(Task& t) {
 		grasp_generator->setPreGraspPose("open");
 		grasp_generator->setGraspPose("closed");
 		grasp_generator->setMonitoredStage(referenced_stage);
+		// insert ungrasp with right hand before attach (as second last stage)
+		grasp_generator->insert(std::move(ungrasp), -2);
 
 		// pick container, using the generated grasp generator
 		auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator), "pick with left");
