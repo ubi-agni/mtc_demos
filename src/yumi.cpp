@@ -25,8 +25,8 @@ void spawnObject() {
 	o.id = "object";
 	o.header.frame_id = "yumi_body";
 	o.primitive_poses.resize(1);
-	o.primitive_poses[0].position.x = 0.25;
-	o.primitive_poses[0].position.y = 0.18;
+	o.primitive_poses[0].position.x = 0.5;
+	o.primitive_poses[0].position.y = -0.4;
 	o.primitive_poses[0].position.z = 0.1;
 	o.primitive_poses[0].orientation.w = 1.0;
 	o.primitives.resize(1);
@@ -47,7 +47,7 @@ void spawnObject() {
 	o.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
 	o.primitives[0].dimensions.resize(3);
 	o.primitives[0].dimensions[0] = 0.6;
-	o.primitives[0].dimensions[1] = 1.0;
+	o.primitives[0].dimensions[1] = 1.2;
 	o.primitives[0].dimensions[2] = 0.06;
 	psi.applyCollisionObject(o);
 }
@@ -108,11 +108,13 @@ void createTask(Task& t) {
 		handover->setProperty("group", arm);
 
 		// TODO: specify that attached object should move to a specific location
-		geometry_msgs::PointStamped target;
-		target.header.frame_id = "world";
-		target.point.x =  0.40;
-		target.point.y = -0.12;
-		target.point.z =  0.2;
+		geometry_msgs::PoseStamped target;
+		target.header.frame_id = "yumi_body";
+		target.pose.position.x =  0.40;
+		target.pose.position.y = -0.12;
+		target.pose.position.z =  0.1;
+		target.pose.orientation.x = -0.70711;
+		target.pose.orientation.w = 0.70711;
 		handover->setGoal(target);
 		referenced_stage = handover.get();
 		t.add(std::move(handover));
@@ -132,7 +134,14 @@ void createTask(Task& t) {
 		auto retract = std::make_unique<stages::MoveRelative>("retract", cartesian);
 		retract->restrictDirection(stages::MoveRelative::FORWARD);
 		retract->setProperty("group", arm);
+		retract->setProperty("link", tool_frame);
 		retract->setProperty("marker_ns", std::string("retract"));
+		geometry_msgs::TwistStamped motion;
+		motion.header.frame_id = tool_frame;
+		motion.twist.linear.z = -1.0;
+		retract->setProperty("twist", motion);
+		retract->setProperty("min_distance", 0.05);
+		retract->setProperty("max_distance", 0.1);
 		ungrasp->insert(std::move(retract), -1);  // insert retract as last stage in ungrasp
 
 		tool_frame = "yumi_link_7_l";
@@ -178,11 +187,15 @@ void createTask(Task& t) {
 		place->setProperty("group", arm);
 
 		// TODO: specify that attached object should move to a specific location
-		geometry_msgs::PointStamped target;
+		geometry_msgs::PoseStamped target;
 		target.header.frame_id = "world";
-		target.point.x = 0.4;
-		target.point.y = 0.5;
-		target.point.z = 0.1;
+		target.pose.position.x = 0.5;
+		target.pose.position.y = 0.4;
+		target.pose.position.z = 0.1;
+		target.pose.orientation.x = -0.5;
+		target.pose.orientation.y = 0.5;
+		target.pose.orientation.z = -0.5;
+		target.pose.orientation.w = 0.5;
 		place->setGoal(target);
 		t.add(std::move(place));
 	}
