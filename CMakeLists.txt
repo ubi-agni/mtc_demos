@@ -35,6 +35,9 @@ target_link_libraries(pa10 ${catkin_LIBRARIES})
 add_executable(pepper src/pepper.cpp)
 target_link_libraries(pepper ${catkin_LIBRARIES})
 
+add_executable(yumi src/yumi.cpp)
+target_link_libraries(yumi ${catkin_LIBRARIES})
+
 
 add_executable(bimodal_baxter src/bimodal_baxter.cpp)
 target_link_libraries(bimodal_baxter ${catkin_LIBRARIES})
