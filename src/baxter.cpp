@@ -3,6 +3,8 @@
 #include <moveit/task_constructor/stages/current_state.h>
 #include <moveit/task_constructor/stages/simple_grasp.h>
 #include <moveit/task_constructor/stages/pick.h>
+#include <moveit/task_constructor/stages/connect.h>
+#include <moveit/task_constructor/solvers/pipeline_planner.h>
 
 #include <ros/ros.h>
 #include <moveit_msgs/CollisionObject.h>
@@ -37,12 +39,24 @@ void plan(Task &t, bool right_side) {
 	std::string side = right_side ? "right" : "left";
 	std::string tool_frame = side + "_gripper";
 	std::string eef = side + "_gripper_eef";
+	std::string arm = side + "_arm";
 
 	Stage* initial_stage = nullptr;
 	auto initial = std::make_unique<stages::CurrentState>("current state");
 	initial_stage = initial.get();
 	t.add(std::move(initial));
 
+	// planner used for connect
+	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
+	pipeline->setTimeout(8.0);
+	pipeline->setPlannerId("RRTConnectkConfigDefault");
+	// connect to pick
+	stages::Connect::GroupPlannerVector planners = {{side + "_gripper", pipeline}, {arm, pipeline}};
+	auto connect = std::make_unique<stages::Connect>("connect", planners);
+	connect->properties().configureInitFrom(Stage::PARENT);
+	t.add(std::move(connect));
+
+	// grasp generator
 	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
 	grasp_generator->setToolToGraspTF(Eigen::Translation3d(0,0, -.03)*
 	                                  Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitY()),

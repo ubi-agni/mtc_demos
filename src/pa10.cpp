@@ -4,6 +4,7 @@
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
 
 #include <moveit/task_constructor/stages/fixed_state.h>
+#include <moveit/task_constructor/stages/connect.h>
 #include <moveit/task_constructor/stages/simple_grasp.h>
 #include <moveit/task_constructor/stages/pick.h>
 #include <moveit/task_constructor/stages/move_relative.h>
@@ -34,7 +35,7 @@ void plan(Task &t, bool right_side) {
 	std::string side = right_side ? "right" : "left";
 	std::string tool_frame = side.substr(0,1) + "h_tool_frame";
 	std::string eef = side.substr(0,1) + "a_tool_mount";
-	std::string group = side + "_arm";
+	std::string arm = side + "_arm";
 
 	Stage* initial_stage = nullptr;
 	// create a fixed initial scene
@@ -52,6 +53,17 @@ void plan(Task &t, bool right_side) {
 		t.add(std::move(initial));
 	}
 
+	// planner used for connect
+	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
+	pipeline->setTimeout(8.0);
+	pipeline->setPlannerId("RRTConnectkConfigDefault");
+	// connect to pick
+	stages::Connect::GroupPlannerVector planners = {{side + "_hand", pipeline}, {arm, pipeline}};
+	auto connect = std::make_unique<stages::Connect>("connect", planners);
+	connect->properties().configureInitFrom(Stage::PARENT);
+	t.add(std::move(connect));
+
+	// grasp generator
 	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
 
 	if (right_side)
@@ -68,6 +80,7 @@ void plan(Task &t, bool right_side) {
 	grasp_generator->setGraspPose("closed");
 	grasp_generator->setMonitoredStage(initial_stage);
 
+	// pick container, using the generated grasp generator
 	auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator));
 	pick->cartesianSolver()->setProperty("jump_threshold", 0.0); // disable jump check, see MoveIt #773
 	pick->setProperty("eef", eef);
@@ -86,7 +99,7 @@ void plan(Task &t, bool right_side) {
 
 	auto move = std::make_unique<stages::MoveRelative>("twist object",
 	                                                   std::make_shared<solvers::CartesianPath>());
-	move->properties().set("group", group);
+	move->properties().set("group", arm);
 	move->setMinMaxDistance(0.1, 0.2);
 	move->properties().set("marker_ns", std::string("lift"));
 	move->properties().set("link", tool_frame);

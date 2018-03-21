@@ -3,6 +3,9 @@
 #include <moveit/task_constructor/stages/current_state.h>
 #include <moveit/task_constructor/stages/simple_grasp.h>
 #include <moveit/task_constructor/stages/pick.h>
+#include <moveit/task_constructor/stages/connect.h>
+#include <moveit/task_constructor/solvers/pipeline_planner.h>
+#include <moveit/task_constructor/solvers/cartesian_path.h>
 
 #include <ros/ros.h>
 #include <moveit_msgs/CollisionObject.h>
@@ -36,7 +39,18 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	std::string side = right_side ? "right" : "left";
 	std::string tool_frame = side + "_gripper";
 	std::string eef = side + "_gripper_eef";
+	std::string arm = side + "_arm";
 
+	// planner used for connect
+	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
+	pipeline->setTimeout(8.0);
+	pipeline->setPlannerId("RRTConnectkConfigDefault");
+	// connect to pick
+	stages::Connect::GroupPlannerVector planners = {{side + "_gripper", pipeline}, {arm, pipeline}};
+	auto connect = std::make_unique<stages::Connect>("connect", planners);
+	connect->properties().configureInitFrom(Stage::PARENT);
+
+	// grasp generator
 	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
 	grasp_generator->setToolToGraspTF(Eigen::Translation3d(0,0, -.03)*
 	                                  Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitY()),
@@ -48,6 +62,7 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	grasp_generator->setMonitoredStage(initial_stage);
 	grasp_generator->setProperty("max_ik_solutions", 4u);
 
+	// pick container, using the generated grasp generator
 	auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator), side);
 	pick->setProperty("eef", eef);
 	pick->setProperty("object", std::string("object"));
@@ -62,6 +77,7 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	lift.twist.linear.z = 1.0;
 	pick->setLiftMotion(lift, 0.03, 0.05);
 
+	pick->insert(std::move(connect), 0);
 	container.insert(std::move(pick));
 }
 
@@ -92,6 +108,7 @@ int main(int argc, char** argv){
 	}
 	catch (const InitStageException &e) {
 		std::cerr << e;
+		std::cerr << t;
 		return EINVAL;
 	}
 

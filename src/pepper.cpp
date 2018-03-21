@@ -3,6 +3,8 @@
 #include <moveit/task_constructor/stages/current_state.h>
 #include <moveit/task_constructor/stages/simple_grasp.h>
 #include <moveit/task_constructor/stages/pick.h>
+#include <moveit/task_constructor/stages/connect.h>
+#include <moveit/task_constructor/solvers/pipeline_planner.h>
 #include <moveit/task_constructor/solvers/cartesian_path.h>
 
 #include <ros/ros.h>
@@ -39,13 +41,24 @@ void plan(Task &t, bool right_side) {
 	std::string side = right_side ? "right" : "left";
 	std::string tool_frame = side.substr(0,1) + "_grasp_frame";
 	std::string eef = side + "_hand";
-	std::string group = side + "_arm";
+	std::string arm = side + "_arm";
 
 	Stage* initial_stage = nullptr;
 	auto initial = std::make_unique<stages::CurrentState>("current state");
 	initial_stage = initial.get();
 	t.add(std::move(initial));
 
+	// planner used for connect
+	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
+	pipeline->setTimeout(8.0);
+	pipeline->setPlannerId("RRTConnectkConfigDefault");
+	// connect to pick
+	stages::Connect::GroupPlannerVector planners = {{eef, pipeline}, {arm, pipeline}};
+	auto connect = std::make_unique<stages::Connect>("connect", planners);
+	connect->properties().configureInitFrom(Stage::PARENT);
+	t.add(std::move(connect));
+
+	// grasp generator
 	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
 
 	if (right_side)
@@ -59,6 +72,7 @@ void plan(Task &t, bool right_side) {
 	grasp_generator->setGraspPose("close");
 	grasp_generator->setMonitoredStage(initial_stage);
 
+	// pick container, using the generated grasp generator
 	auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator));
 	pick->cartesianSolver()->setProperty("jump_threshold", 0.0); // disable jump check, see MoveIt #773
 	pick->setProperty("eef", eef);
