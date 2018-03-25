@@ -54,10 +54,10 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
 
 	if (right_side)
-		grasp_generator->setToolToGraspTF(Eigen::Translation3d(0.0,0.03,0.0), tool_frame);
+		grasp_generator->setIKFrame(Eigen::Translation3d(0.0,0.03,0.0), tool_frame);
 	else
-		grasp_generator->setToolToGraspTF(Eigen::Translation3d(0.005,0.035,0.0) *
-		                                  Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()), tool_frame);
+		grasp_generator->setIKFrame(Eigen::Translation3d(0.005,0.035,0.0) *
+		                            Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()), tool_frame);
 
 	grasp_generator->setAngleDelta(.2);
 	grasp_generator->setPreGraspPose("open");

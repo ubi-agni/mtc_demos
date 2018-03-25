@@ -80,9 +80,9 @@ void createTask(Task& t) {
 
 		// grasp generator
 		auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
-		grasp_generator->setToolToGraspTF(Eigen::Translation3d(0.0, -0.05, 0.13) *
-		                                  Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
-		                                  tool_frame);
+		grasp_generator->setIKFrame(Eigen::Translation3d(0.0, -0.05, 0.13) *
+		                            Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
+		                            tool_frame);
 
 		grasp_generator->setAngleDelta(.2);
 		grasp_generator->setPreGraspPose("open");
@@ -157,9 +157,9 @@ void createTask(Task& t) {
 
 		// grasp generator
 		auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
-		grasp_generator->setToolToGraspTF(Eigen::Translation3d(0.0, 0.05, 0.13) *
-		                                  Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
-		                                  tool_frame);
+		grasp_generator->setIKFrame(Eigen::Translation3d(0.0, 0.05, 0.13) *
+		                            Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
+		                            tool_frame);
 
 		grasp_generator->setAngleDelta(.2);
 		grasp_generator->setPreGraspPose("open");

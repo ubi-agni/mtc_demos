@@ -59,7 +59,7 @@ void plan(Task &t, bool right_side) {
 
 	// grasp generator
 	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
-	grasp_generator->setToolToGraspTF(Eigen::Affine3d::Identity(), tool_frame);
+	grasp_generator->setIKFrame(Eigen::Affine3d::Identity(), tool_frame);
 	grasp_generator->setAngleDelta(.2);
 	grasp_generator->setPreGraspPose("open");
 	grasp_generator->setGraspPose("closed");

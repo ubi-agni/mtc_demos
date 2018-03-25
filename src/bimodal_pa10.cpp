@@ -55,13 +55,13 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
 
 	if (right_side)
-		grasp_generator->setToolToGraspTF(Eigen::Translation3d(0,0,.05)*
-		                                  Eigen::AngleAxisd(+0.5*M_PI, Eigen::Vector3d::UnitY()),
-		                                  tool_frame);
+		grasp_generator->setIKFrame(Eigen::Translation3d(0,0,.05)*
+		                            Eigen::AngleAxisd(+0.5*M_PI, Eigen::Vector3d::UnitY()),
+		                            tool_frame);
 	else
-		grasp_generator->setToolToGraspTF(Eigen::Translation3d(0,0,.05)*
-		                                  Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitY()),
-		                                  tool_frame);
+		grasp_generator->setIKFrame(Eigen::Translation3d(0,0,.05)*
+		                            Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitY()),
+		                            tool_frame);
 
 	grasp_generator->setAngleDelta(.2);
 	grasp_generator->setPreGraspPose("open");
@@ -121,14 +121,11 @@ int main(int argc, char** argv){
 
 	try {
 		char ch;
-		spawnObject(true);
-		t.plan();
+		for (int i=0; i < 10; ++i) {
+			spawnObject(true);
+			t.plan();
+		}
 
-		std::cout << "waiting for any key + <enter>\n";
-		std::cin >> ch;
-
-		spawnObject(false);
-		t.plan();
 		std::cout << "waiting for any key + <enter>\n";
 		std::cin >> ch;
 	}
