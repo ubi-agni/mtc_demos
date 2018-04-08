@@ -10,15 +10,12 @@
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
 
 #include <ros/ros.h>
-#include <moveit_msgs/CollisionObject.h>
-#include <shape_msgs/SolidPrimitive.h>
-
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 
 using namespace moveit::task_constructor;
 
-void spawnObject() {
+void spawnObjects() {
 	moveit::planning_interface::PlanningSceneInterface psi;
 
 	moveit_msgs::CollisionObject o;
@@ -52,8 +49,9 @@ void spawnObject() {
 	psi.applyCollisionObject(o);
 }
 
-void createTask(Task& t) {
-	spawnObject();
+Task createTask() {
+	Task t;
+
 	std::string tool_frame = "yumi_link_7_r";
 	std::string eef = "right_hand";
 	std::string arm = "right_arm";
@@ -200,6 +198,7 @@ void createTask(Task& t) {
 		place->setGoal(target);
 		t.add(std::move(place));
 	}
+	return t;
 }
 
 int main(int argc, char** argv){
@@ -207,9 +206,9 @@ int main(int argc, char** argv){
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
 
-	Task t;
-	createTask(t);
+	Task t = createTask();
 	try {
+		spawnObjects();
 		t.plan();
 		std::cout << "waiting for any key + <enter>\n";
 		char ch;
