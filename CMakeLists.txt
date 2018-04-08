@@ -10,6 +10,7 @@ endif ()
 find_package(catkin REQUIRED COMPONENTS
 	moveit_ros_planning_interface
 	moveit_task_constructor_core
+	rviz_marker_tools
 )
 
 catkin_package(
@@ -22,6 +23,8 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
+
+add_subdirectory(stages)
 
 add_executable(baxter src/baxter.cpp)
 target_link_libraries(baxter ${catkin_LIBRARIES})
@@ -51,3 +54,6 @@ target_link_libraries(bimodal_pepper ${catkin_LIBRARIES})
 
 add_executable(yumi_handover src/yumi_handover.cpp)
 target_link_libraries(yumi_handover ${catkin_LIBRARIES})
+
+add_executable(yumi_bimanual src/yumi_bimanual.cpp)
+target_link_libraries(yumi_bimanual ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
