@@ -107,10 +107,13 @@ Task createTask() {
 		auto merger = new Merger("approach");
 		for (const auto& eef : {eef_left, eef_right}) {
 			auto move = new stages::MoveRelative("approach " + eef, cartesian);
+			move->restrictDirection(stages::MoveRelative::BACKWARD);
 			move->setProperty("marker_ns", std::string("approach"));
-			const moveit::core::JointModelGroup* jmg = t.getRobotModel()->getEndEffector(eef);
-			move->setGroup(jmg->getName());
-//	twist.header.frame_id = ik_frame_left.header.frame_id;
+			const moveit::core::JointModelGroup* eef_jmg = t.getRobotModel()->getEndEffector(eef);
+			const auto& group_link = eef_jmg->getEndEffectorParentGroup();
+			move->setGroup(group_link.first);
+			move->setLink(group_link.second);
+			twist.header.frame_id = group_link.second;
 			move->along(twist);
 			move->setMinMaxDistance(0.05, 0.10);
 			merger->insert(std::unique_ptr<Stage>(move));
@@ -151,16 +154,16 @@ Task createTask() {
 		auto merger = new Merger("close grippers");
 		for (const auto& eef : {eef_left, eef_right}) {
 			auto move = new stages::MoveTo("close " + eef, pipeline);
-			const std::string& group = t.getRobotModel()->getEndEffector(eef)->getName();
-			move->setProperty("group", group);
-			move->setProperty("joint_pose", std::string("closed"));
+			move->restrictDirection(stages::MoveTo::FORWARD);
+			move->setGroup(t.getRobotModel()->getEndEffector(eef)->getName());
+			move->setGoal("closed");
 			merger->insert(std::unique_ptr<Stage>(move));
 		}
 		pick->insert(std::unique_ptr<Stage>(merger));
 	}
 
-	{  // attach objects
-		auto attach = new stages::ModifyPlanningScene("allow object collision");
+	{  // attach object
+		auto attach = new stages::ModifyPlanningScene("attach object");
 		attach->attachObject("object", ik_frame_left.header.frame_id);
 		pick->insert(std::unique_ptr<Stage>(attach));
 	}
@@ -173,9 +176,12 @@ Task createTask() {
 		auto merger = new Merger("lift");
 		for (const auto& eef : {eef_left, eef_right}) {
 			auto move = new stages::MoveRelative("lift " + eef, cartesian);
+			move->restrictDirection(stages::MoveRelative::FORWARD);
 			move->setProperty("marker_ns", std::string("lift"));
-			const moveit::core::JointModelGroup* jmg = t.getRobotModel()->getEndEffector(eef);
-			move->setGroup(jmg->getName());
+			const moveit::core::JointModelGroup* eef_jmg = t.getRobotModel()->getEndEffector(eef);
+			const auto& group_link = eef_jmg->getEndEffectorParentGroup();
+			move->setGroup(group_link.first);
+			move->setLink(group_link.second);
 			move->along(twist);
 			move->setMinMaxDistance(0.03, 0.05);
 			merger->insert(std::unique_ptr<Stage>(move));
