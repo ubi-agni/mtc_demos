@@ -53,6 +53,8 @@ BimanualGraspPose::BimanualGraspPose(const std::string& name)
 {
 	auto& p = properties();
 	p.declare<std::string>("object");
+	p.declare<double>("linear_delta", 0.02, "linear distance between grasp poses");
+	p.declare<double>("angle_delta", 0.1, "angular distance between grasp poses (rad)");
 }
 
 void BimanualGraspPose::init(const core::RobotModelConstPtr& robot_model)
@@ -118,36 +120,81 @@ bool BimanualGraspPose::compute(){
 	target_pose.header.frame_id = object_name;
 	target_pose.pose.orientation.w = 1.0;
 
-	double offset;
+	auto spawnSolution = [this, scene](geometry_msgs::PoseStamped pose, double yoffset, double cost = 0.0) {
+		moveit::task_constructor::InterfaceState state(scene);
+		moveit::task_constructor::SubTrajectory trajectory;
+		// right is shifted by -offset
+		pose.pose.position.y = -yoffset;
+		state.properties().set("target_pose_right", pose);
+		rviz_marker_tools::appendFrame(trajectory.markers(), pose, 0.1, "grasp frame/right");
+
+		// left is shifted by +offset
+		pose.pose.position.y = +yoffset;
+		// ...and turned 180° about z
+		Eigen::Quaterniond q;
+		tf::quaternionMsgToEigen(pose.pose.orientation, q);
+		tf::quaternionEigenToMsg(q * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()), pose.pose.orientation);
+		state.properties().set("target_pose_left", pose);
+		rviz_marker_tools::appendFrame(trajectory.markers(), pose, 0.1, "grasp frame/left");
+
+		trajectory.setCost(cost);
+		spawn(std::move(state), std::move(trajectory));
+	};
+
+	const auto& props = properties();
 	switch(shape->type) {
-	case(shapes::ShapeType::BOX):
-		offset = std::static_pointer_cast<const shapes::Box>(shape)->size[1] / 2;
+	case(shapes::ShapeType::BOX): {
+		const double *size = std::static_pointer_cast<const shapes::Box>(shape)->size;
+		double delta = props.get<double>("linear_delta");
+		double xmax = size[0] / 2.0, x = -xmax;
+		while (x <= xmax) {
+			double zmax = size[2] / 2.0, z = -zmax;
+			while (z <= zmax) {
+				target_pose.pose.position.x = x;
+				target_pose.pose.position.z = z;
+				spawnSolution(target_pose, size[1] / 2.0, std::abs(x) + std::abs(z));
+				z += delta;
+			}
+			x += delta;
+		}
 		break;
-	case(shapes::ShapeType::SPHERE):
-		offset = std::static_pointer_cast<const shapes::Sphere>(shape)->radius;
+	}
+	case(shapes::ShapeType::SPHERE): {
+		double radius = std::static_pointer_cast<const shapes::Sphere>(shape)->radius;
+		double angle = -M_PI / 4.;
+		double delta = props.get<double>("angle_delta");
+		while (angle < M_PI / 4.) {
+			tf::quaternionEigenToMsg(Eigen::Quaterniond(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ())),
+			                         target_pose.pose.orientation);
+			spawnSolution(target_pose, radius);
+			angle += delta;
+		}
 		break;
-	case(shapes::ShapeType::CYLINDER):
-		offset = std::static_pointer_cast<const shapes::Cylinder>(shape)->radius;
+	}
+	case(shapes::ShapeType::CYLINDER): {
+		double linear_delta = props.get<double>("linear_delta");
+		double angle_delta = props.get<double>("angle_delta");
+		double radius = std::static_pointer_cast<const shapes::Cylinder>(shape)->radius;
+		double zmax = std::static_pointer_cast<const shapes::Cylinder>(shape)->length / 2.0;
+		double angle = -M_PI / 4.;
+		while (angle < M_PI / 4.) {
+			double z = -zmax;
+			while (z <= zmax) {
+				target_pose.pose.position.z = z;
+				tf::quaternionEigenToMsg(Eigen::Quaterniond(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ())),
+				                         target_pose.pose.orientation);
+				spawnSolution(target_pose, radius, std::abs(z));
+				z += linear_delta;
+			}
+			spawnSolution(target_pose, radius);
+			angle += angle_delta;
+		}
 		break;
+	}
 	default:
 		ROS_WARN_STREAM_NAMED("BimanualGraspPose", "Object " << object_name << " has unsupported shape " << shape->type);
 		return false;
 	}
-	moveit::task_constructor::InterfaceState state(scene);
-	moveit::task_constructor::SubTrajectory trajectory;
-	// right is shifted by +offset and turned 180° about z
-	target_pose.pose.position.y = -offset;
-	state.properties().set("target_pose_right", target_pose);
-	rviz_marker_tools::appendFrame(trajectory.markers(), target_pose, 0.1, "grasp frame/right");
-
-	// left is shifted by -offset
-	target_pose.pose.position.y = +offset;
-	target_pose.pose.orientation.z = 1.0;
-	target_pose.pose.orientation.w = 0.0;
-	state.properties().set("target_pose_left", target_pose);
-	rviz_marker_tools::appendFrame(trajectory.markers(), target_pose, 0.1, "grasp frame/left");
-
-	spawn(std::move(state), std::move(trajectory));
 	return true;
 }
 
