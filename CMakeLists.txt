@@ -52,6 +52,10 @@ add_executable(bimodal_pepper src/bimodal_pepper.cpp)
 target_link_libraries(bimodal_pepper ${catkin_LIBRARIES})
 
 
+add_executable(bimanual_pepper src/bimanual_pepper.cpp)
+target_link_libraries(bimanual_pepper ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
+
+
 add_executable(yumi_handover src/yumi_handover.cpp)
 target_link_libraries(yumi_handover ${catkin_LIBRARIES})
 
