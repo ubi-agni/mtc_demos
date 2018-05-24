@@ -97,7 +97,7 @@ Task createTask(const std::string& object = "object") {
 			const moveit::core::JointModelGroup* eef_jmg = t.getRobotModel()->getEndEffector(eef);
 			const auto& group_link = eef_jmg->getEndEffectorParentGroup();
 			move->setGroup(group_link.first);
-			move->setLink(group_link.second);
+			move->setIKFrame(group_link.second);
 			twist.header.frame_id = group_link.second;
 			move->along(twist);
 			move->setMinMaxDistance(0.05, 0.10);
@@ -147,7 +147,7 @@ Task createTask(const std::string& object = "object") {
 			const moveit::core::JointModelGroup* eef_jmg = t.getRobotModel()->getEndEffector(eef);
 			const auto& group_link = eef_jmg->getEndEffectorParentGroup();
 			move->setGroup(group_link.first);
-			move->setLink(group_link.second);
+			move->setIKFrame(group_link.second);
 			twist.header.frame_id = group_link.second;
 			move->along(twist);
 			move->setMinMaxDistance(0.02, 0.03);
