@@ -45,7 +45,7 @@ public:
 	BimanualGraspPose(const std::string& name = "bimanual grasp pose");
 
 	void init(const core::RobotModelConstPtr &robot_model) override;
-	bool compute() override;
+	void compute() override;
 
 	void setEndEffectorPoses(const std::map<std::string, std::string> &eefs) {
 		eefs_ = eefs;

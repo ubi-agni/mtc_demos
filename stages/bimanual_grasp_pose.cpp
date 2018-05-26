@@ -107,9 +107,9 @@ void BimanualGraspPose::onNewSolution(const SolutionBase& s)
 	scenes_.push_back(scene);
 }
 
-bool BimanualGraspPose::compute(){
+void BimanualGraspPose::compute(){
 	if (scenes_.empty())
-		return false;
+		return;
 	planning_scene::PlanningSceneConstPtr scene = scenes_[0];
 	scenes_.pop_front();
 
@@ -193,9 +193,8 @@ bool BimanualGraspPose::compute(){
 	}
 	default:
 		ROS_WARN_STREAM_NAMED("BimanualGraspPose", "Object " << object_name << " has unsupported shape " << shape->type);
-		return false;
+		return;
 	}
-	return true;
 }
 
 } } }
