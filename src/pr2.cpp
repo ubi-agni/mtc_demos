@@ -1,6 +1,7 @@
 #include <moveit/task_constructor/task.h>
 
 #include <moveit/task_constructor/stages/current_state.h>
+#include <moveit/task_constructor/stages/generate_grasp_pose.h>
 #include <moveit/task_constructor/stages/simple_grasp.h>
 #include <moveit/task_constructor/stages/pick.h>
 #include <moveit/task_constructor/stages/connect.h>
@@ -58,15 +59,17 @@ void plan(Task &t, bool right_side) {
 	t.add(std::move(connect));
 
 	// grasp generator
-	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
-	grasp_generator->setIKFrame(Eigen::Affine3d::Identity(), tool_frame);
+	auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
 	grasp_generator->setAngleDelta(.2);
-	grasp_generator->setPreGraspPose("open");
-	grasp_generator->setGraspPose("closed");
-	grasp_generator->setMonitoredStage(initial_stage);
+
+	auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
+	grasp->setIKFrame(Eigen::Affine3d::Identity(), tool_frame);
+	grasp->setPreGraspPose("open");
+	grasp->setGraspPose("closed");
+	grasp->setMonitoredStage(initial_stage);
 
 	// pick container, using the generated grasp generator
-	auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator));
+	auto pick = std::make_unique<stages::Pick>(std::move(grasp));
 	pick->setProperty("eef", eef);
 	pick->setProperty("object", std::string("object"));
 	geometry_msgs::TwistStamped approach;

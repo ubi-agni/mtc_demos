@@ -1,6 +1,7 @@
 #include <moveit/task_constructor/task.h>
 
 #include <moveit/task_constructor/stages/current_state.h>
+#include <moveit/task_constructor/stages/generate_grasp_pose.h>
 #include <moveit/task_constructor/stages/simple_grasp.h>
 #include <moveit/task_constructor/stages/pick.h>
 #include <moveit/task_constructor/stages/connect.h>
@@ -51,21 +52,23 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	connect->properties().configureInitFrom(Stage::PARENT);
 
 	// grasp generator
-	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
+	auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
+	grasp_generator->setAngleDelta(.2);
+
+	auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
 
 	if (right_side)
-		grasp_generator->setIKFrame(Eigen::Translation3d(0.0,0.03,0.0), tool_frame);
+		grasp->setIKFrame(Eigen::Translation3d(0.0,0.03,0.0), tool_frame);
 	else
-		grasp_generator->setIKFrame(Eigen::Translation3d(0.005,0.035,0.0) *
-		                            Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()), tool_frame);
+		grasp->setIKFrame(Eigen::Translation3d(0.005,0.035,0.0) *
+		                  Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()), tool_frame);
 
-	grasp_generator->setAngleDelta(.2);
-	grasp_generator->setPreGraspPose("open");
-	grasp_generator->setGraspPose("close");
-	grasp_generator->setMonitoredStage(initial_stage);
+	grasp->setPreGraspPose("open");
+	grasp->setGraspPose("close");
+	grasp->setMonitoredStage(initial_stage);
 
 	// pick container, using the generated grasp generator
-	auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator), side);
+	auto pick = std::make_unique<stages::Pick>(std::move(grasp), side);
 	pick->cartesianSolver()->setProperty("jump_threshold", 0.0); // disable jump check, see MoveIt #773
 	pick->setProperty("eef", eef);
 	pick->setProperty("object", std::string("object"));
