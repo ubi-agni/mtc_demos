@@ -5,6 +5,7 @@
 
 #include <moveit/task_constructor/stages/fixed_state.h>
 #include <moveit/task_constructor/stages/connect.h>
+#include <moveit/task_constructor/stages/generate_grasp_pose.h>
 #include <moveit/task_constructor/stages/simple_grasp.h>
 #include <moveit/task_constructor/stages/pick.h>
 #include <moveit/task_constructor/stages/move_relative.h>
@@ -64,21 +65,23 @@ void plan(Task &t, bool right_side) {
 	t.add(std::move(connect));
 
 	// grasp generator
-	auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
+	auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
+	grasp_generator->setAngleDelta(.2);
+
+	auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
 
 	if (right_side)
-		grasp_generator->setIKFrame(Eigen::Translation3d(0,0,.05)*
-		                            Eigen::AngleAxisd(+0.5*M_PI, Eigen::Vector3d::UnitY()),
-		                            tool_frame);
+		grasp->setIKFrame(Eigen::Translation3d(0,0,.05)*
+		                  Eigen::AngleAxisd(+0.5*M_PI, Eigen::Vector3d::UnitY()),
+		                  tool_frame);
 	else
-		grasp_generator->setIKFrame(Eigen::Translation3d(0,0,.05)*
-		                            Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitY()),
-		                            tool_frame);
+		grasp->setIKFrame(Eigen::Translation3d(0,0,.05)*
+		                  Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitY()),
+		                  tool_frame);
 
-	grasp_generator->setAngleDelta(M_PI / 10.);
-	grasp_generator->setPreGraspPose("open");
-	grasp_generator->setGraspPose("closed");
-	grasp_generator->setMonitoredStage(initial_stage);
+	grasp->setPreGraspPose("open");
+	grasp->setGraspPose("closed");
+	grasp->setMonitoredStage(initial_stage);
 
 	// pick container, using the generated grasp generator
 	auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator));

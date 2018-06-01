@@ -4,6 +4,7 @@
 #include <moveit/task_constructor/stages/connect.h>
 #include <moveit/task_constructor/stages/move_to.h>
 #include <moveit/task_constructor/stages/move_relative.h>
+#include <moveit/task_constructor/stages/generate_grasp_pose.h>
 #include <moveit/task_constructor/stages/simple_grasp.h>
 #include <moveit/task_constructor/stages/pick.h>
 #include <moveit/task_constructor/solvers/cartesian_path.h>
@@ -77,18 +78,20 @@ Task createTask() {
 		t.add(std::move(connect));
 
 		// grasp generator
-		auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
-		grasp_generator->setIKFrame(Eigen::Translation3d(0.0, -0.05, 0.13) *
-		                            Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
-		                            tool_frame);
-
+		auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
 		grasp_generator->setAngleDelta(.2);
-		grasp_generator->setPreGraspPose("open");
-		grasp_generator->setGraspPose("closed");
-		grasp_generator->setMonitoredStage(referenced_stage);
+
+		auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
+		grasp->setIKFrame(Eigen::Translation3d(0.0, -0.05, 0.13) *
+		                  Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
+		                  tool_frame);
+
+		grasp->setPreGraspPose("open");
+		grasp->setGraspPose("closed");
+		grasp->setMonitoredStage(referenced_stage);
 
 		// pick container, using the generated grasp generator
-		auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator), "pick with right");
+		auto pick = std::make_unique<stages::Pick>(std::move(grasp), "pick with right");
 		pick->setProperty("eef", eef);
 		pick->setProperty("object", std::string("object"));
 		geometry_msgs::TwistStamped approach;
@@ -122,7 +125,8 @@ Task createTask() {
 	/************************************************************************************/
 	{
 		// release object with right hand
-		auto ungrasp = std::make_unique<stages::SimpleUnGrasp>();
+		auto ungrasp = std::make_unique<stages::SimpleUnGrasp>
+		               (std::make_unique<stages::GenerateGraspPose>("generate release pose"));
 		ungrasp->properties().configureInitFrom(Stage::PARENT, {"object"});
 		ungrasp->setProperty("eef", eef);
 		ungrasp->setPreGraspPose("open");
@@ -154,20 +158,22 @@ Task createTask() {
 		t.add(std::move(connect));
 
 		// grasp generator
-		auto grasp_generator = std::make_unique<stages::SimpleGrasp>();
-		grasp_generator->setIKFrame(Eigen::Translation3d(0.0, 0.05, 0.13) *
-		                            Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
-		                            tool_frame);
-
+		auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
 		grasp_generator->setAngleDelta(.2);
-		grasp_generator->setPreGraspPose("open");
-		grasp_generator->setGraspPose("closed");
-		grasp_generator->setMonitoredStage(referenced_stage);
+
+		auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
+		grasp->setIKFrame(Eigen::Translation3d(0.0, 0.05, 0.13) *
+		                  Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
+		                  tool_frame);
+
+		grasp->setPreGraspPose("open");
+		grasp->setGraspPose("closed");
+		grasp->setMonitoredStage(referenced_stage);
 		// insert ungrasp with right hand before attach (as second last stage)
-		grasp_generator->insert(std::move(ungrasp), -2);
+		grasp->insert(std::move(ungrasp), -2);
 
 		// pick container, using the generated grasp generator
-		auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator), "pick with left");
+		auto pick = std::make_unique<stages::Pick>(std::move(grasp), "pick with left");
 		pick->setProperty("eef", eef);
 		pick->setProperty("object", std::string("object"));
 		geometry_msgs::TwistStamped approach;
