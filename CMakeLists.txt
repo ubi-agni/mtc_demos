@@ -53,14 +53,14 @@ add_executable(pepper_bimodal src/pepper_bimodal.cpp)
 target_link_libraries(pepper_bimodal ${catkin_LIBRARIES} gtest)
 
 
-add_executable(bimanual_pepper src/bimanual_pepper.cpp)
-target_link_libraries(bimanual_pepper ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
+add_executable(pepper_bimanual src/pepper_bimanual.cpp)
+target_link_libraries(pepper_bimanual ${PROJECT_NAME}_stages ${catkin_LIBRARIES} gtest)
 
 
 add_executable(yumi_handover src/yumi_handover.cpp)
-target_link_libraries(yumi_handover ${catkin_LIBRARIES})
+target_link_libraries(yumi_handover ${catkin_LIBRARIES} gtest)
 
 add_executable(yumi_bimanual src/yumi_bimanual.cpp)
-target_link_libraries(yumi_bimanual ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
+target_link_libraries(yumi_bimanual ${PROJECT_NAME}_stages ${catkin_LIBRARIES} gtest)
 
 add_subdirectory(test)

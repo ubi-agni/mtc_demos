@@ -13,8 +13,11 @@
 #include <ros/ros.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
+#include <gtest/gtest.h>
+#include "test_utils.h"
 
 using namespace moveit::task_constructor;
+bool do_pause = false;
 
 void spawnObjects() {
 	moveit::planning_interface::PlanningSceneInterface psi;
@@ -125,8 +128,10 @@ Task createTask() {
 	/************************************************************************************/
 	{
 		// release object with right hand
-		auto ungrasp = std::make_unique<stages::SimpleUnGrasp>
-		               (std::make_unique<stages::GenerateGraspPose>("generate release pose"));
+		auto pose_generator = std::make_unique<stages::GenerateGraspPose>("generate release pose");
+		pose_generator->setAngleDelta(.2);
+
+		auto ungrasp = std::make_unique<stages::SimpleUnGrasp>(std::move(pose_generator));
 		ungrasp->properties().configureInitFrom(Stage::PARENT, {"object"});
 		ungrasp->setProperty("eef", eef);
 		ungrasp->setPreGraspPose("open");
@@ -207,23 +212,30 @@ Task createTask() {
 	return t;
 }
 
+TEST(Yumi, handover) {
+	ros::Duration(1).sleep();
+	Task t = createTask();
+	spawnObjects();
+
+	try {
+		ASSERT_TRUE(t.plan()) << "planning failed" << std::endl << t;
+	} catch (const InitStageException &e) {
+		ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
+	}
+
+	auto num = t.solutions().size();
+	EXPECT_GE(num, 30);
+	EXPECT_LE(num, 100);
+
+	if (do_pause) waitForKey();
+}
+
 int main(int argc, char** argv){
+	testing::InitGoogleTest(&argc, argv);
 	ros::init(argc, argv, "yumi");
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
 
-	Task t = createTask();
-	try {
-		spawnObjects();
-		t.plan();
-		std::cout << "waiting for any key + <enter>\n";
-		char ch;
-		std::cin >> ch;
-	}
-	catch (const InitStageException &e) {
-		std::cerr << e << t;
-		return EINVAL;
-	}
-
-	return 0;
+	do_pause = doPause(argc, argv);
+	return RUN_ALL_TESTS();
 }
