@@ -61,12 +61,12 @@ void plan(Task &t, bool right_side) {
 	// grasp generator
 	auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
 	grasp_generator->setAngleDelta(.2);
+	grasp_generator->setPreGraspPose("open");
+	grasp_generator->setGraspPose("closed");
+	grasp_generator->setMonitoredStage(initial_stage);
 
 	auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
 	grasp->setIKFrame(Eigen::Affine3d::Identity(), tool_frame);
-	grasp->setPreGraspPose("open");
-	grasp->setGraspPose("closed");
-	grasp->setMonitoredStage(initial_stage);
 
 	// pick container, using the generated grasp generator
 	auto pick = std::make_unique<stages::Pick>(std::move(grasp));
