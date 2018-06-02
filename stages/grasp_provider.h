@@ -47,7 +47,7 @@ namespace moveit { namespace task_constructor { namespace stages {
  */
 class GraspProvider : public MonitoringGenerator {
 public:
-	GraspProvider(const std::string& name = "get grasps", const std::string& action_name = "grasp_provider");
+	GraspProvider(const std::string& action_name = "grasp_provider");
 
 	void reset() override;
 	void init(const moveit::core::RobotModelConstPtr &robot_model) override;

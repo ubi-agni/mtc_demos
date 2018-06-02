@@ -60,14 +60,14 @@ void plan(Task &t, bool right_side) {
 	// grasp generator
 	auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
 	grasp_generator->setAngleDelta(.2);
+	grasp_generator->setPreGraspPose("open");
+	grasp_generator->setGraspPose("closed");
+	grasp_generator->setMonitoredStage(initial_stage);
 
 	auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
 	grasp->setIKFrame(Eigen::Translation3d(0,0, -.03)*
 	                  Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitY()),
 	                  tool_frame);
-	grasp->setPreGraspPose("open");
-	grasp->setGraspPose("closed");
-	grasp->setMonitoredStage(initial_stage);
 	grasp->setProperty("max_ik_solutions", 4u);
 
 	auto pick = std::make_unique<stages::Pick>(std::move(grasp));

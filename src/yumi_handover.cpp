@@ -81,17 +81,16 @@ Task createTask() {
 		t.add(std::move(connect));
 
 		// grasp generator
-		auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
+		auto grasp_generator = new stages::GenerateGraspPose("generate grasp pose");
 		grasp_generator->setAngleDelta(.2);
+		grasp_generator->setPreGraspPose("open");
+		grasp_generator->setGraspPose("closed");
+		grasp_generator->setMonitoredStage(referenced_stage);
 
-		auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
+		auto grasp = std::make_unique<stages::SimpleGrasp>(std::unique_ptr<MonitoringGenerator>(grasp_generator));
 		grasp->setIKFrame(Eigen::Translation3d(0.0, -0.05, 0.13) *
 		                  Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
 		                  tool_frame);
-
-		grasp->setPreGraspPose("open");
-		grasp->setGraspPose("closed");
-		grasp->setMonitoredStage(referenced_stage);
 
 		// pick container, using the generated grasp generator
 		auto pick = std::make_unique<stages::Pick>(std::move(grasp), "pick with right");
@@ -128,14 +127,14 @@ Task createTask() {
 	/************************************************************************************/
 	{
 		// release object with right hand
-		auto pose_generator = std::make_unique<stages::GenerateGraspPose>("generate release pose");
+		auto pose_generator = new stages::GenerateGraspPose("generate release pose");
 		pose_generator->setAngleDelta(.2);
+		pose_generator->setPreGraspPose("open");
+		pose_generator->setGraspPose("closed");
 
-		auto ungrasp = std::make_unique<stages::SimpleUnGrasp>(std::move(pose_generator));
+		auto ungrasp = std::make_unique<stages::SimpleUnGrasp>(std::unique_ptr<MonitoringGenerator>(pose_generator));
 		ungrasp->properties().configureInitFrom(Stage::PARENT, {"object"});
 		ungrasp->setProperty("eef", eef);
-		ungrasp->setPreGraspPose("open");
-		ungrasp->setGraspPose("closed");
 		ungrasp->remove(-1);  // remove last stage (pose generator)
 
 		// retract right hand
@@ -163,17 +162,17 @@ Task createTask() {
 		t.add(std::move(connect));
 
 		// grasp generator
-		auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
+		auto grasp_generator = new stages::GenerateGraspPose("generate grasp pose");
 		grasp_generator->setAngleDelta(.2);
+		grasp_generator->setPreGraspPose("open");
+		grasp_generator->setGraspPose("closed");
+		grasp_generator->setMonitoredStage(referenced_stage);
 
-		auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
+		auto grasp = std::make_unique<stages::SimpleGrasp>(std::unique_ptr<Stage>(grasp_generator));
 		grasp->setIKFrame(Eigen::Translation3d(0.0, 0.05, 0.13) *
 		                  Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()),
 		                  tool_frame);
 
-		grasp->setPreGraspPose("open");
-		grasp->setGraspPose("closed");
-		grasp->setMonitoredStage(referenced_stage);
 		// insert ungrasp with right hand before attach (as second last stage)
 		grasp->insert(std::move(ungrasp), -2);
 

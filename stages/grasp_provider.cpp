@@ -40,9 +40,13 @@
 
 namespace moveit { namespace task_constructor { namespace stages {
 
-GraspProvider::GraspProvider(const std::string& name, const std::string& action_name)
-   : ac_(action_name, true)
+GraspProvider::GraspProvider(const std::string& action_name)
+   : MonitoringGenerator(action_name), ac_(action_name, true)
 {
+	auto& p = properties();
+	p.declare<std::string>("object", "object to grasp");
+	p.declare<std::string>("config", "grasp provider config on parameter server");
+	setTimeout(5);
 }
 
 void GraspProvider::reset()
@@ -56,7 +60,11 @@ void GraspProvider::init(const core::RobotModelConstPtr &robot_model)
 {
 	const auto& props = properties();
 	props.get<std::string>("config");
-	ac_.waitForServer(ros::Duration(timeout()));
+
+	if (!ac_.waitForServer(ros::Duration(timeout())))
+		throw InitStageException(*this, "failed to contact action server");
+
+	MonitoringGenerator::init(robot_model);
 }
 
 void GraspProvider::onNewSolution(const SolutionBase& s)

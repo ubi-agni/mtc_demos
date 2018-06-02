@@ -56,6 +56,9 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	// grasp generator
 	auto grasp_generator = std::make_unique<stages::GenerateGraspPose>("generate grasp pose");
 	grasp_generator->setAngleDelta(.2);
+	grasp_generator->setPreGraspPose("open");
+	grasp_generator->setGraspPose("close");
+	grasp_generator->setMonitoredStage(initial_stage);
 
 	auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
 
@@ -64,10 +67,6 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	else
 		grasp->setIKFrame(Eigen::Translation3d(0.005,0.035,0.0) *
 		                  Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()), tool_frame);
-
-	grasp->setPreGraspPose("open");
-	grasp->setGraspPose("close");
-	grasp->setMonitoredStage(initial_stage);
 
 	// pick container, using the generated grasp generator
 	auto pick = std::make_unique<stages::Pick>(std::move(grasp), side);
