@@ -118,7 +118,7 @@ Task createTask() {
 			move->setGroup(group_link.first);
 			move->setIKFrame(group_link.second);
 			twist.header.frame_id = group_link.second;
-			move->along(twist);
+			move->setGoal(twist);
 			move->setMinMaxDistance(0.05, 0.10);
 			merger->insert(std::unique_ptr<Stage>(move));
 		}
@@ -186,7 +186,7 @@ Task createTask() {
 			const auto& group_link = eef_jmg->getEndEffectorParentGroup();
 			move->setGroup(group_link.first);
 			move->setIKFrame(group_link.second);
-			move->along(twist);
+			move->setGoal(twist);
 			move->setMinMaxDistance(0.03, 0.05);
 			merger->insert(std::unique_ptr<Stage>(move));
 		}
