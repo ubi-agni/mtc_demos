@@ -91,14 +91,14 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	                                                   std::make_shared<solvers::CartesianPath>());
 	move->properties().set("group", arm);
 	move->setMinMaxDistance(0.1, 0.2);
-	move->properties().set("marker_ns", std::string("lift"));
-	move->properties().set("link", tool_frame);
+	move->setProperty("marker_ns", std::string("lift"));
+	move->setIKFrame(tool_frame);
 
 	geometry_msgs::TwistStamped twist;
 	twist.header.frame_id = "object";
 	twist.twist.linear.y = 1;
 	twist.twist.angular.y = 2;
-	move->along(twist);
+	move->setGoal(twist);
 	pick->insert(std::move(move));
 
 	pick->insert(std::move(connect), 0);

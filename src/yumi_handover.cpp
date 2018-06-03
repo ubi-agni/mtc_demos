@@ -141,12 +141,12 @@ Task createTask() {
 		auto retract = std::make_unique<stages::MoveRelative>("retract", cartesian);
 		retract->restrictDirection(stages::MoveRelative::FORWARD);
 		retract->setProperty("group", arm);
-		retract->setProperty("link", tool_frame);
+		retract->setIKFrame(tool_frame);
 		retract->setProperty("marker_ns", std::string("retract"));
 		geometry_msgs::TwistStamped motion;
 		motion.header.frame_id = tool_frame;
 		motion.twist.linear.z = -1.0;
-		retract->setProperty("twist", motion);
+		retract->setGoal(motion);
 		retract->setProperty("min_distance", 0.05);
 		retract->setProperty("max_distance", 0.1);
 		ungrasp->insert(std::move(retract), -1);  // insert retract as last stage in ungrasp
