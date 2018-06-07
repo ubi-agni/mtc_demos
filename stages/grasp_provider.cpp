@@ -47,7 +47,8 @@ GraspProvider::GraspProvider(const std::string& name, const std::string& action_
 
 void GraspProvider::reset()
 {
-	pending_.clear();
+	pending_requests_.clear();
+	pending_grasps_.clear();
 	MonitoringGenerator::reset();
 }
 
@@ -81,33 +82,46 @@ void GraspProvider::onNewSolution(const SolutionBase& s)
 	goal.config_name = props.get<std::string>("config");
 
 	// TODO: Here we could directly request a new goal and memorize the goal handle
-	pending_.push_back(std::make_pair(scene, std::move(goal)));
+	pending_requests_.push_back(std::make_pair(scene, std::move(goal)));
 }
 
 bool GraspProvider::canCompute() const
 {
-	return pending_.size() > 0;
+	return pending_requests_.size() > 0 || pending_grasps_.size() > 0;
 }
 
 void GraspProvider::compute()
 {
-	auto scene = sendNextRequest();
-	if (!scene) return;
+	if (!pending_requests_.empty())
+		sendNextRequest();
 
-	for (const moveit_msgs::Grasp& grasp : ac_.getResult()->grasps) {
-		InterfaceState state(scene->diff());
-		auto& props = state.properties();
-		props.set("target_pose", grasp.grasp_pose);
-		props.set("pregrasp", posture(grasp.pre_grasp_posture));
-		props.set("grasp", posture(grasp.grasp_posture));
-		props.set("pre_grasp_approach", grasp.pre_grasp_approach);
-		props.set("post_grasp_retreat", grasp.post_grasp_retreat);
+	planning_scene::PlanningSceneConstPtr scene;
+	const moveit_msgs::Grasp* grasp = nullptr;
+	while (true) {  // get next grasp
+		if (pending_grasps_.empty())
+			return;  // all done
 
-		SubTrajectory solution;
-		solution.setCost(grasp.grasp_quality);
-		solution.setComment(grasp.id);
-		spawn(std::move(state), std::move(solution));
+		Grasps& current = pending_grasps_.front();
+		if (current.index < current.grasps->grasps.size()) {
+			scene = current.scene;
+			grasp = &current.grasps->grasps[current.index++];
+			break;
+		}
+		pending_grasps_.pop_front();
 	}
+
+	InterfaceState state(scene->diff());
+	auto& props = state.properties();
+	props.set("target_pose", grasp->grasp_pose);
+	props.set("pregrasp", posture(grasp->pre_grasp_posture));
+	props.set("grasp", posture(grasp->grasp_posture));
+	props.set("pre_grasp_approach", grasp->pre_grasp_approach);
+	props.set("post_grasp_retreat", grasp->post_grasp_retreat);
+
+	SubTrajectory solution;
+	solution.setCost(grasp->grasp_quality);
+	solution.setComment(grasp->id);
+	spawn(std::move(state), std::move(solution));
 }
 
 moveit_msgs::RobotState GraspProvider::posture(const trajectory_msgs::JointTrajectory& t)
@@ -122,23 +136,22 @@ moveit_msgs::RobotState GraspProvider::posture(const trajectory_msgs::JointTraje
 	return state;
 }
 
-planning_scene::PlanningSceneConstPtr GraspProvider::sendNextRequest()
+void GraspProvider::sendNextRequest()
 {
-	if (pending_.empty())
-		return planning_scene::PlanningSceneConstPtr();
-
 	// fetch first element from pending_ list
-	decltype(pending_) target;
-	target.splice(target.begin(), pending_, pending_.begin());
+	decltype(pending_requests_) target;
+	target.splice(target.begin(), pending_requests_, pending_requests_.begin());
+	planning_scene::PlanningSceneConstPtr scene = target.front().first;
+	const grasping_msgs::GenerateGraspsGoal& goal = target.front().second;
 
 	ros::Duration timeout(this->timeout());
 	// TODO: replace by asynchronous approach
-	auto result = ac_.sendGoalAndWait(target.front().second, timeout, timeout);
+	auto result = ac_.sendGoalAndWait(goal, timeout, timeout);
 	if (result != actionlib::SimpleClientGoalState::SUCCEEDED) {
 		ROS_WARN_STREAM_NAMED("GraspProvider", "actionlib server returned failed: " << result.getText());
-		return planning_scene::PlanningSceneConstPtr();
+		return;
 	}
-	return target.front().first;
+	pending_grasps_.push_back(Grasps{scene, ac_.getResult(), 0});
 }
 
 } } }

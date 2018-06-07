@@ -63,10 +63,16 @@ protected:
 
 	// TODO: SimpleActionClient/Server cannot handle parallel requests!
 	actionlib::SimpleActionClient<grasping_msgs::GenerateGraspsAction> ac_;
-	std::list<std::pair<planning_scene::PlanningSceneConstPtr, grasping_msgs::GenerateGraspsGoal>> pending_;
+	std::list<std::pair<planning_scene::PlanningSceneConstPtr, grasping_msgs::GenerateGraspsGoal>> pending_requests_;
+	struct Grasps {
+		planning_scene::PlanningSceneConstPtr scene;
+		grasping_msgs::GenerateGraspsResultConstPtr grasps;
+		size_t index;
+	};
+	std::list<Grasps> pending_grasps_;
 
 private:
-	planning_scene::PlanningSceneConstPtr sendNextRequest();
+	void sendNextRequest();
 	moveit_msgs::RobotState posture(const trajectory_msgs::JointTrajectory& t);
 };
 
