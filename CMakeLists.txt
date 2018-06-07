@@ -51,6 +51,9 @@ target_link_libraries(bimodal_pa10 ${catkin_LIBRARIES})
 add_executable(bimodal_pepper src/bimodal_pepper.cpp)
 target_link_libraries(bimodal_pepper ${catkin_LIBRARIES})
 
+add_executable(kuka_bimodal src/kuka_bimodal.cpp)
+target_link_libraries(kuka_bimodal ${PROJECT_NAME}_stages ${catkin_LIBRARIES} gtest)
+
 
 add_executable(bimanual_pepper src/bimanual_pepper.cpp)
 target_link_libraries(bimanual_pepper ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
