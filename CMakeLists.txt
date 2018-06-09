@@ -14,6 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
 	rostest
 )
 
+catkin_python_setup()
+
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mtc_demos
@@ -27,4 +29,5 @@ include_directories(
 
 add_subdirectory(stages)
 add_subdirectory(src)
+add_subdirectory(python)
 add_subdirectory(test)
