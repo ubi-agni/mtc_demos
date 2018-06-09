@@ -1,5 +1,6 @@
 set(SOURCES
 	bimanual_grasp_pose.cpp
+	generate_touch_pose.cpp
 )
 add_library(${PROJECT_NAME}_stages ${SOURCES})
 target_link_libraries(${PROJECT_NAME}_stages
