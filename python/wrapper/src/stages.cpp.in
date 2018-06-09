@@ -1,0 +1,13 @@
+#include <boost/python.hpp>
+
+namespace moveit {
+namespace python {
+
+void export_mtc_stages();
+
+} }
+
+BOOST_PYTHON_MODULE(@STAGES_LIB_NAME@)
+{
+	moveit::python::export_mtc_stages();
+}
