@@ -50,6 +50,7 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
 	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
+	pipeline->properties().set("max_velocity_scaling_factor", 0.1);
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = {{side + "_hand", pipeline}, {arm, pipeline}};
 	auto connect = std::make_unique<stages::Connect>("connect", planners);
@@ -104,7 +105,14 @@ TEST(Kuka, bimodal) {
 
 		spawnObject(pos);
 		try {
-			t.plan();
+			t.plan(10);
+			if (t.solutions().size() > 0) {
+				t.introspection().publishSolution(*t.solutions().front());
+				std::cerr << "Going to execute solution "
+				          << t.introspection().solutionId(*t.solutions().front()) << std::endl;
+				waitForKey();
+				t.execute(*t.solutions().front());
+			}
 		} catch (const InitStageException &e) {
 			ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
 		}
