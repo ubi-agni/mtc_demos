@@ -55,6 +55,7 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	stages::Connect::GroupPlannerVector planners = {{side + "_hand", pipeline}, {arm, pipeline}};
 	auto connect = std::make_unique<stages::Connect>("connect", planners);
 	connect->properties().configureInitFrom(Stage::PARENT);
+	connect->properties().set("merge_mode", stages::Connect::SEQUENTIAL);
 
 	// grasp generator
 	auto grasp_generator = std::make_unique<stages::GraspProvider>();
@@ -105,7 +106,7 @@ TEST(Kuka, bimodal) {
 
 		spawnObject(pos);
 		try {
-			t.plan(10);
+			t.plan();
 			if (t.solutions().size() > 0) {
 				t.introspection().publishSolution(*t.solutions().front());
 				std::cerr << "Going to execute solution "
