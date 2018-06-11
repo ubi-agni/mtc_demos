@@ -38,6 +38,8 @@
 #include <rviz_marker_tools/marker_creation.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <eigen_conversions/eigen_msg.h>
+#include <geometric_shapes/shape_operations.h>
+#include <moveit/robot_model/aabb.h>
 #include <Eigen/Geometry>
 
 namespace moveit { namespace task_constructor { namespace stages {
@@ -45,6 +47,39 @@ namespace moveit { namespace task_constructor { namespace stages {
 GenerateTouchPose::GenerateTouchPose(const std::string& name)
    : GenerateGraspPose(name)
 {
+}
+
+// TODO: move into MoveIt core
+moveit::core::AABB getAABB(const std::vector<shapes::ShapeConstPtr>& shapes,
+                           const EigenSTL::vector_Affine3d& shape_poses) {
+	core::AABB aabb;
+
+	for (std::size_t i = 0; i < shapes.size(); ++i)
+	{
+		const Eigen::Affine3d& transform = shape_poses[i];
+
+		if (shapes[i]->type != shapes::MESH)
+		{
+			Eigen::Vector3d extents = shapes::computeShapeExtents(shapes[i].get());
+			aabb.extendWithTransformedBox(transform, extents);
+		}
+		else
+		{
+			// we cannot use shapes::computeShapeExtents() for meshes, since that method does not provide information about
+			// the offset of the mesh origin
+			const shapes::Mesh* mesh = dynamic_cast<const shapes::Mesh*>(shapes[i].get());
+			for (unsigned int j = 0; j < mesh->vertex_count; ++j)
+				aabb.extend(transform * Eigen::Map<Eigen::Vector3d>(&mesh->vertices[3 * j]));
+		}
+	}
+	return aabb;
+}
+
+Eigen::Vector3d touchPoint(const collision_detection::World::ObjectConstPtr &object) {
+	core::AABB aabb = getAABB(object->shapes_, object->shape_poses_);
+	Eigen::Vector3d result = aabb.center();
+	result[2] += 0.5 * aabb.sizes()[2];
+	return result;
 }
 
 void GenerateTouchPose::compute()
@@ -55,26 +90,18 @@ void GenerateTouchPose::compute()
 	scenes_.pop_front();
 
 	const auto& props = properties();
-	const std::string& object_name = props.get<std::string>("object");
+	const std::string& object = props.get<std::string>("object");
 	const std::string& eef = props.get<std::string>("eef");
+
+	// enable object collision with end-effector (for ComputeIK)
+	collision_detection::AllowedCollisionMatrix& acm = scene->getAllowedCollisionMatrixNonConst();
+	acm.setEntry(object, scene->getRobotModel()->getEndEffector(eef)
+	             ->getLinkModelNamesWithCollisionGeometry(), true);
 
 	geometry_msgs::PoseStamped pose;
 	pose.header.frame_id = scene->getPlanningFrame();
-	pose.pose.orientation.w = 1.0;
-
-	// TODO: evaluate object shape
-	collision_detection::World::ObjectConstPtr object
-	      = scene->getWorld()->getObject(object_name);
-	if (object->shape_poses_.size() != 1) {
-		ROS_WARN_STREAM_NAMED("GenerateTouchPose", "object has " << object->shape_poses_.size() << " shapes");
-		return;
-	}
-	// enable object collision with end-effector
-	collision_detection::AllowedCollisionMatrix& acm = scene->getAllowedCollisionMatrixNonConst();
-	acm.setEntry(object_name, scene->getRobotModel()->getEndEffector(eef)
-	             ->getLinkModelNamesWithCollisionGeometry(), true);
-
-	tf::pointEigenToMsg(object->shape_poses_[0].translation(), pose.pose.position);
+	Eigen::Vector3d top = touchPoint(scene->getWorld()->getObject(object));
+	tf::pointEigenToMsg(top, pose.pose.position);
 
 	double current_angle_ = 0.0;
 	while (current_angle_ < 2.*M_PI && current_angle_ > -2.*M_PI) {

@@ -5,6 +5,7 @@
 #include <moveit/python/task_constructor/properties.h>
 #include <stages/grasp_provider.h>
 #include <stages/generate_touch_pose.h>
+#include <stages/automatica.h>
 
 namespace bp = boost::python;
 using namespace moveit::task_constructor;
@@ -20,6 +21,8 @@ void export_mtc_stages()
 	      ("GenerateTouchPose", bp::init<bp::optional<const std::string&>>())
 	      ;
 	bp::implicitly_convertible<std::auto_ptr<GenerateTouchPose>, std::auto_ptr<Stage>>();
+
+	bp::def("approachAndPush", &approachAndPush, bp::return_value_policy<bp::manage_new_object>());
 
 }
 
