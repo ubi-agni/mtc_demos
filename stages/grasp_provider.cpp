@@ -37,6 +37,7 @@
 #include "grasp_provider.h"
 #include <grasping_msgs/GraspPlanningAction.h>
 #include <moveit/planning_scene/planning_scene.h>
+#include <moveit/robot_state/conversions.h>
 
 namespace moveit { namespace task_constructor { namespace stages {
 
@@ -103,7 +104,7 @@ void GraspProvider::compute()
 	if (!pending_requests_.empty())
 		sendNextRequest();
 
-	planning_scene::PlanningSceneConstPtr scene;
+	planning_scene::PlanningScenePtr scene;
 	const moveit_msgs::Grasp* grasp = nullptr;
 	while (true) {  // get next grasp
 		if (pending_grasps_.empty())
@@ -111,7 +112,7 @@ void GraspProvider::compute()
 
 		Grasps& current = pending_grasps_.front();
 		if (current.index < current.grasps->grasps.size()) {
-			scene = current.scene;
+			scene = current.scene->diff();
 			grasp = &current.grasps->grasps[current.index++];
 			break;
 		}
@@ -125,6 +126,8 @@ void GraspProvider::compute()
 	props.set("grasp", posture(grasp->grasp_posture));
 	props.set("pre_grasp_approach", grasp->pre_grasp_approach);
 	props.set("post_grasp_retreat", grasp->post_grasp_retreat);
+	moveit::core::robotStateMsgToRobotState(props.get<moveit_msgs::RobotState>("pregrasp"),
+	                                        scene->getCurrentStateNonConst(), false);
 
 	SubTrajectory solution;
 	solution.setCost(grasp->grasp_quality);
