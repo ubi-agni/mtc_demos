@@ -38,6 +38,7 @@
 #include "generate_touch_pose.h"
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
 #include <moveit/task_constructor/solvers/cartesian_path.h>
+#include <moveit/task_constructor/solvers/joint_interpolation.h>
 #include <moveit/task_constructor/stages/current_state.h>
 #include <moveit/task_constructor/stages/modify_planning_scene.h>
 #include <moveit/task_constructor/stages/connect.h>
@@ -67,12 +68,13 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
 	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
+	auto interpolate = std::make_shared<solvers::JointInterpolationPlanner>();
 	auto cartesian = std::make_shared<solvers::CartesianPath>();
 	cartesian->properties().set("max_velocity_scaling_factor", 0.1);
 
 	{
 		// connect
-		stages::Connect::GroupPlannerVector planners = {{hand_group, pipeline}, {arm_group, pipeline}};
+		stages::Connect::GroupPlannerVector planners = {{hand_group, interpolate}, {arm_group, pipeline}};
 		auto connect = new stages::Connect("connect", planners);
 		connect->properties().configureInitFrom(Stage::PARENT);
 		connect->properties().set("merge_mode", stages::Connect::SEQUENTIAL);
