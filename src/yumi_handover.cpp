@@ -61,7 +61,6 @@ Task createTask() {
 	std::string arm = "right_arm";
 
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 
 	auto cartesian = std::make_shared<solvers::CartesianPath>();

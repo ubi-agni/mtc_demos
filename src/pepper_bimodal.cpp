@@ -46,7 +46,6 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 
 	// planner used for connect
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = {{eef, pipeline}, {arm, pipeline}};

@@ -84,7 +84,6 @@ Task createTask() {
 
 	// pipeline planner
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 
 
