@@ -67,6 +67,8 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 	// planners
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
+	pipeline->properties().set("max_velocity_scaling_factor", 0.1);
+
 	auto interpolate = std::make_shared<solvers::JointInterpolationPlanner>();
 	auto cartesian = std::make_shared<solvers::CartesianPath>();
 	cartesian->properties().set("max_velocity_scaling_factor", 0.1);
@@ -97,15 +99,15 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 		t.add(std::unique_ptr<Stage>(allow_touch));
 	}
 
-	{  // approach
-		auto approach = new stages::MoveRelative("approach", cartesian);
+	{  // touch
+		auto approach = new stages::MoveRelative("touch", cartesian);
 		approach->setGroup(arm_group);
 		approach->properties().set("marker_ns", std::string("approach"));
 		geometry_msgs::Vector3Stamped direction;
 		direction.header.frame_id = "world";
 		direction.vector.z = -1.0;
 		approach->setGoal(direction);
-		approach->setMinMaxDistance(0.05, 0.1);
+		approach->setMinMaxDistance(0.0499, 0.05);
 		t.add(std::unique_ptr<Stage>(approach));
 	}
 
@@ -114,20 +116,33 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 		auto touch = new GenerateTouchPose();
 		PropertyMap& touch_props = touch->properties();
 		touch_props.configureInitFrom(Stage::PARENT, {"object", "eef"});
-		touch->setPreGraspPose("open");  // TODO: touch pose!
+		touch->setPreGraspPose("touch");
 		touch->setAngleDelta(0.2);
 		touch->setMonitoredStage(initial);
 
 		auto ik = new ComputeIK("compute ik", std::unique_ptr<Stage>(touch));
 		ik->setEndEffector(eef);
-		ik->setIKFrame(Eigen::Translation3d(0, 0.05, 0) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()), tool_frame);
+		// inherit from parent instead
+		// ik->setIKFrame(Eigen::Translation3d(0, 0.05, 0) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()), tool_frame);
 		PropertyMap& ik_props = ik->properties();
 		ik_props.configureInitFrom(Stage::INTERFACE, {"target_pose"});  // derived from child's solution
 		touch_props.exposeTo(ik_props, { "object" });
-		ik_props.configureInitFrom(Stage::PARENT, {"object"});
-		ik_props.exposeTo(t.properties(), { "object" });
+		ik_props.configureInitFrom(Stage::PARENT, {"object", "ik_frame"});
+		ik_props.exposeTo(t.properties(), {"object", "ik_frame"});
 
 		t.add(std::unique_ptr<Stage>(ik));
+	}
+
+	{  // lift
+		auto approach = new stages::MoveRelative("lift", cartesian);
+		approach->setGroup(arm_group);
+		approach->properties().set("marker_ns", std::string("lift"));
+		geometry_msgs::Vector3Stamped direction;
+		direction.header.frame_id = "world";
+		direction.vector.z = 1.0;
+		approach->setGoal(direction);
+		approach->setMinMaxDistance(0.0499, 0.05);
+		t.add(std::unique_ptr<Stage>(approach));
 	}
 
 	return task;
