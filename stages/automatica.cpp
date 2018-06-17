@@ -99,6 +99,18 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 		t.add(std::unique_ptr<Stage>(allow_touch));
 	}
 
+	{  // approach
+		auto approach = new stages::MoveRelative("approach", cartesian);
+		approach->setGroup(arm_group);
+		approach->properties().set("marker_ns", std::string("approach"));
+		geometry_msgs::Vector3Stamped direction;
+		direction.header.frame_id = "world";
+		direction.vector.z = -1.0;
+		approach->setGoal(direction);
+		approach->setMinMaxDistance(0.03, 0.05);
+		t.add(std::unique_ptr<Stage>(approach));
+	}
+
 	{  // touch
 		auto approach = new stages::MoveRelative("touch", cartesian);
 		approach->setGroup(arm_group);
