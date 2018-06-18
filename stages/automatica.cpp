@@ -41,12 +41,18 @@
 #include <moveit/task_constructor/solvers/joint_interpolation.h>
 #include <moveit/task_constructor/stages/current_state.h>
 #include <moveit/task_constructor/stages/modify_planning_scene.h>
+#include <moveit/task_constructor/stages/fix_collision_objects.h>
 #include <moveit/task_constructor/stages/connect.h>
 #include <moveit/task_constructor/stages/compute_ik.h>
+#include <moveit/task_constructor/stages/move_to.h>
 #include <moveit/task_constructor/stages/move_relative.h>
+#include "grasp_provider.h"
+#include <moveit/task_constructor/stages/simple_grasp.h>
+#include <moveit/task_constructor/stages/pick.h>
 #include <moveit/planning_scene/planning_scene.h>
 
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PointStamped.h>
 #include <tf/tf.h>
 
 namespace moveit { namespace task_constructor { namespace stages {
@@ -155,6 +161,131 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 		approach->setGoal(direction);
 		approach->setMinMaxDistance(0.0499, 0.05);
 		t.add(std::unique_ptr<Stage>(approach));
+	}
+
+	return task;
+}
+
+Task* grasp(const std::string& name, const std::string& side)
+{
+	Task* task = new Task(name);
+	Task& t = *task;
+
+	Stage* initial = new stages::CurrentState("current");
+	t.add(std::unique_ptr<Stage>(initial));
+
+	{
+		auto fix = new stages::FixCollisionObjects();
+		fix->setMaxPenetration(0.04);
+		t.add(std::unique_ptr<Stage>(fix));
+		initial = fix;
+	}
+
+
+	std::string tool_frame = side.substr(0,1) + "h_tool_frame";
+	std::string eef = side.substr(0,1) + "a_tool_mount";
+	std::string arm = side + "_arm";
+	std::string config = "shadow_" + side + "_handed_limited";
+
+	// planner used for connect
+	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
+	pipeline->setPlannerId("RRTConnectkConfigDefault");
+	pipeline->properties().set("max_velocity_scaling_factor", 0.1);
+	// connect to pick
+	stages::Connect::GroupPlannerVector planners = {{side + "_hand", pipeline}, {arm, pipeline}};
+	auto connect = new stages::Connect("connect", planners);
+	connect->properties().configureInitFrom(Stage::PARENT);
+	connect->properties().set("merge_mode", stages::Connect::SEQUENTIAL);
+	t.add(std::unique_ptr<Stage>(connect));
+
+	// grasp generator
+	auto grasp_generator = new stages::GraspProvider();
+	grasp_generator->setProperty("config", config);
+	grasp_generator->setMonitoredStage(initial);
+
+	auto grasp = new stages::SimpleGrasp(std::unique_ptr<MonitoringGenerator>(grasp_generator));
+	grasp->setIKFrame(tool_frame);
+
+	// pick container, using the generated grasp generator
+	auto pick = new stages::Pick(std::unique_ptr<Stage>(grasp), side);
+	pick->setProperty("eef", eef);
+	pick->properties().configureInitFrom(Stage::PARENT, { "object" });
+	geometry_msgs::TwistStamped approach;
+	approach.header.frame_id = tool_frame;
+	approach.twist.linear.z = 1.0;
+	pick->setApproachMotion(approach, 0.05, 0.1);
+
+	geometry_msgs::TwistStamped lift;
+	lift.header.frame_id = "frame";
+	lift.twist.linear.z = 1.0;
+	pick->setLiftMotion(lift, 0.03, 0.05);
+
+	// finalize
+	t.add(std::unique_ptr<Stage>(pick));
+
+	return task;
+}
+
+Task* graspAndDrop(const std::string& name, const std::string& side)
+{
+	Task* task = grasp(name, side);
+	Task& t = *task;
+
+	std::string arm = side + "_arm";
+	std::string hand = side + "_hand";
+	std::string tool_frame = side.substr(0,1) + "h_tool_frame";
+	std::string eef = side.substr(0,1) + "a_tool_mount";
+
+	// planner used for connect
+	auto cartesian = std::make_shared<solvers::CartesianPath>();
+	cartesian->properties().set("max_velocity_scaling_factor", 0.1);
+	auto interpolate = std::make_shared<solvers::JointInterpolationPlanner>();
+
+	{
+		auto move = new stages::MoveRelative("turn", cartesian);
+		move->setGroup(arm);
+		geometry_msgs::TwistStamped twist;
+		twist.header.frame_id = tool_frame;
+		twist.twist.angular.y = side == "left" ? -0.2 : 0.2;
+		move->setGoal(twist);
+		move->setProperty("marker_ns", "turn");
+		t.add(std::unique_ptr<Stage>(move));
+	}
+
+	{
+		auto detach = new ModifyPlanningScene("detach object");
+		PropertyMap& p = detach->properties();
+		p.set("eef", eef);
+		p.declare<std::string>("object");
+		p.configureInitFrom(Stage::PARENT, { "object" });
+
+		detach->setCallback([](const planning_scene::PlanningScenePtr& scene, const PropertyMap& p){
+				const std::string& eef = p.get<std::string>("eef");
+				moveit_msgs::AttachedCollisionObject obj;
+				obj.object.operation = (int8_t) moveit_msgs::CollisionObject::REMOVE;
+				obj.link_name = scene->getRobotModel()->getEndEffector(eef)->getEndEffectorParentGroup().second;
+				obj.object.id = p.get<std::string>("object");
+				scene->processAttachedCollisionObjectMsg(obj);
+			});
+		t.add(std::unique_ptr<Stage>(detach));
+	}
+
+	{
+		auto move = new stages::MoveTo("open", interpolate);
+		move->setGroup(hand);
+		move->setGoal("open");
+		t.add(std::unique_ptr<Stage>(move));
+	}
+
+	{
+		auto move = new stages::MoveRelative("side", cartesian);
+		move->setGroup(arm);
+		move->setProperty("marker_ns", "side");
+		geometry_msgs::Vector3Stamped v;
+		v.header.frame_id = "world";
+		v.vector.x = side == "left" ? 0.15 : -0.15;
+		move->setGoal(v);
+		t.add(std::unique_ptr<Stage>(move));
 	}
 
 	return task;

@@ -23,6 +23,8 @@ void export_mtc_stages()
 	bp::implicitly_convertible<std::auto_ptr<GenerateTouchPose>, std::auto_ptr<Stage>>();
 
 	bp::def("approachAndPush", &approachAndPush, bp::return_value_policy<bp::manage_new_object>());
+	bp::def("grasp", &grasp, bp::return_value_policy<bp::manage_new_object>());
+	bp::def("graspAndDrop", &graspAndDrop, bp::return_value_policy<bp::manage_new_object>());
 
 }
 

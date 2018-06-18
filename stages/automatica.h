@@ -41,6 +41,8 @@
 
 namespace moveit { namespace task_constructor { namespace stages {
 
-Task* approachAndPush(const std::__cxx11::string& name, const std::string& side);
+Task* approachAndPush(const std::string& name, const std::string& side);
+Task* grasp(const std::string& name, const std::string& side);
+Task* graspAndDrop(const std::string& name, const std::string& side);
 
 } } }

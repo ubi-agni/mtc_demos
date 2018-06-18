@@ -106,13 +106,6 @@ TEST(Kuka, bimodal) {
 		spawnObject(pos);
 		try {
 			t.plan();
-			if (t.solutions().size() > 0) {
-				t.introspection().publishSolution(*t.solutions().front());
-				std::cerr << "Going to execute solution "
-				          << t.introspection().solutionId(*t.solutions().front()) << std::endl;
-				waitForKey();
-				t.execute(*t.solutions().front());
-			}
 		} catch (const InitStageException &e) {
 			ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
 		}
