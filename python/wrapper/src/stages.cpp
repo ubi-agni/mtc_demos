@@ -26,6 +26,8 @@ void export_mtc_stages()
 	bp::def("grasp", &grasp, bp::return_value_policy<bp::manage_new_object>());
 	bp::def("graspAndDrop", &graspAndDrop, bp::return_value_policy<bp::manage_new_object>());
 
+	bp::def("juggleStart", &juggleStart, bp::return_value_policy<bp::manage_new_object>());
+	bp::def("juggle", &juggle, bp::return_value_policy<bp::manage_new_object>());
 }
 
 } }

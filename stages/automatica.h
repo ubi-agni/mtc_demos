@@ -45,4 +45,7 @@ Task* approachAndPush(const std::string& name, const std::string& side);
 Task* grasp(const std::string& name, const std::string& side);
 Task* graspAndDrop(const std::string& name, const std::string& side);
 
+Task* juggleStart();
+Task* juggle();
+
 } } }

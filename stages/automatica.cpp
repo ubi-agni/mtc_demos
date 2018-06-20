@@ -291,4 +291,107 @@ Task* graspAndDrop(const std::string& name, const std::string& side)
 	return task;
 }
 
+Task* juggleStart()
+{
+	const std::string side = "left";
+	Task* task = grasp("", side);
+	Task& t = *task;
+
+	{
+		auto detach = new ModifyPlanningScene("detach object");
+		PropertyMap& p = detach->properties();
+		p.set("eef", side.substr(0,1) + "a_tool_mount");
+		p.declare<std::string>("object");
+		p.configureInitFrom(Stage::PARENT, { "object" });
+
+		detach->setCallback([](const planning_scene::PlanningScenePtr& scene, const PropertyMap& p){
+				const std::string& eef = p.get<std::string>("eef");
+				moveit_msgs::AttachedCollisionObject obj;
+				obj.object.operation = (int8_t) moveit_msgs::CollisionObject::REMOVE;
+				obj.link_name = scene->getRobotModel()->getEndEffector(eef)->getEndEffectorParentGroup().second;
+				obj.object.id = p.get<std::string>("object");
+				scene->processAttachedCollisionObjectMsg(obj);
+			});
+		t.add(std::unique_ptr<Stage>(detach));
+	}
+
+	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
+	pipeline->setPlannerId("RRTConnectkConfigDefault");
+	pipeline->properties().set("max_velocity_scaling_factor", 0.1);
+
+	for (const std::string& side: {"left", "right"}) {
+		auto move = new stages::MoveTo(side + " arm", pipeline);
+		move->restrictDirection(stages::MoveRelative::FORWARD);
+		move->setGroup(side + "_arm");
+		move->setGoal("juggleLeftA");
+		t.add(std::unique_ptr<Stage>(move));
+	}
+
+	for (const std::string& side: {"left", "right"}) {
+		auto interpolate = std::make_shared<solvers::JointInterpolationPlanner>();
+		auto move = new stages::MoveTo(side + " hand", interpolate);
+		move->setGroup(side + "_hand");
+		move->setGoal("juggle");
+		t.add(std::unique_ptr<Stage>(move));
+	}
+
+	return task;
+}
+
+Task* juggle()
+{
+	Task* task = juggleStart();
+	Task& t = *task;
+
+	// planners
+	auto planner = std::make_shared<solvers::JointInterpolationPlanner>();
+	planner->properties().set("max_velocity_scaling_factor", 0.1);
+
+	auto move = new stages::MoveTo("turn left arm", planner);
+	move->restrictDirection(stages::MoveRelative::FORWARD);
+	move->setGroup("left_arm");
+	move->setGoal("juggleLeftB");
+	t.add(std::unique_ptr<Stage>(move));
+
+	for (const std::string& side: {"left", "right"}) {
+		move = new stages::MoveTo(side, planner);
+		move->restrictDirection(stages::MoveRelative::FORWARD);
+		move->setGroup(side + "_arm");
+		move->setGoal("juggleMiddleB");
+		t.add(std::unique_ptr<Stage>(move));
+	}
+
+	for (const std::string& side: {"left", "right"}) {
+		auto move = new stages::MoveTo(side, planner);
+		move->restrictDirection(stages::MoveRelative::FORWARD);
+		move->setGroup(side + "_arm");
+		move->setGoal("juggleRightA");
+		t.add(std::unique_ptr<Stage>(move));
+	}
+
+	move = new stages::MoveTo("turn right arm", planner);
+	move->restrictDirection(stages::MoveRelative::FORWARD);
+	move->setGroup("right_arm");
+	move->setGoal("juggleRightB");
+	t.add(std::unique_ptr<Stage>(move));
+
+	for (const std::string& side: {"right", "left"}) {
+		auto move = new stages::MoveTo(side, planner);
+		move->restrictDirection(stages::MoveRelative::FORWARD);
+		move->setGroup(side + "_arm");
+		move->setGoal("juggleMiddleB");
+		t.add(std::unique_ptr<Stage>(move));
+	}
+
+	for (const std::string& side: {"right", "left"}) {
+		auto move = new stages::MoveTo(side + " arm", planner);
+		move->restrictDirection(stages::MoveRelative::FORWARD);
+		move->setGroup(side + "_arm");
+		move->setGoal("juggleLeftA");
+		t.add(std::unique_ptr<Stage>(move));
+	}
+
+	return task;
+}
+
 } } }
