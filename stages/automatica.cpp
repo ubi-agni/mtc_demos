@@ -297,24 +297,6 @@ Task* juggleStart()
 	Task* task = grasp("", side);
 	Task& t = *task;
 
-	{
-		auto detach = new ModifyPlanningScene("detach object");
-		PropertyMap& p = detach->properties();
-		p.set("eef", side.substr(0,1) + "a_tool_mount");
-		p.declare<std::string>("object");
-		p.configureInitFrom(Stage::PARENT, { "object" });
-
-		detach->setCallback([](const planning_scene::PlanningScenePtr& scene, const PropertyMap& p){
-				const std::string& eef = p.get<std::string>("eef");
-				moveit_msgs::AttachedCollisionObject obj;
-				obj.object.operation = (int8_t) moveit_msgs::CollisionObject::REMOVE;
-				obj.link_name = scene->getRobotModel()->getEndEffector(eef)->getEndEffectorParentGroup().second;
-				obj.object.id = p.get<std::string>("object");
-				scene->processAttachedCollisionObjectMsg(obj);
-			});
-		t.add(std::unique_ptr<Stage>(detach));
-	}
-
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	pipeline->properties().set("max_velocity_scaling_factor", 0.1);
