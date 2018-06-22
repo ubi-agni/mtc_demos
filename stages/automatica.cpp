@@ -294,8 +294,12 @@ Task* graspAndDrop(const std::string& name, const std::string& side)
 Task* juggleStart()
 {
 	const std::string side = "left";
-	Task* task = grasp("", side);
+
+	Task* task = new Task("");
 	Task& t = *task;
+
+	Stage* initial = new stages::CurrentState("current");
+	t.add(std::unique_ptr<Stage>(initial));
 
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
