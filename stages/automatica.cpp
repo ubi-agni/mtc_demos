@@ -351,12 +351,6 @@ Task* juggle()
 		t.add(std::unique_ptr<Stage>(move));
 	}
 
-	move = new stages::MoveTo("turn right arm", planner);
-	move->restrictDirection(stages::MoveRelative::FORWARD);
-	move->setGroup("right_arm");
-	move->setGoal("juggleRightB");
-	t.add(std::unique_ptr<Stage>(move));
-
 	for (const std::string& side: {"right", "left"}) {
 		auto move = new stages::MoveTo(side, planner);
 		move->restrictDirection(stages::MoveRelative::FORWARD);
