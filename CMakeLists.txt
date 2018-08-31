@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 	moveit_task_constructor_core
 	rviz_marker_tools
 	rostest
+	eigen_conversions
 )
 
 catkin_package(
