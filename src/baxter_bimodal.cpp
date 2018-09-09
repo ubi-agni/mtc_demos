@@ -121,8 +121,8 @@ TEST(Baxter, bimodal) {
 			++successes;
 			solutions += num;
 
-			EXPECT_GE(num, 1);
-			EXPECT_LE(num, 80);
+			EXPECT_GE(num, 1u);
+			EXPECT_LE(num, 80u);
 		}
 	}
 	EXPECT_LE((double)failures / (successes + failures), 0.2) << "failure rate too high";
