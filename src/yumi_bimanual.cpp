@@ -207,8 +207,8 @@ TEST(Yumi, bimanual) {
 	}
 
 	auto num = t.solutions().size();
-	EXPECT_GE(num, 4);
-	EXPECT_LE(num, 10);
+	EXPECT_GE(num, 4u);
+	EXPECT_LE(num, 10u);
 
 	if (do_pause) waitForKey();
 }

@@ -115,8 +115,8 @@ TEST(PR2, bimodal) {
 			++successes;
 			solutions += num;
 
-			EXPECT_GE(num, 1);
-			EXPECT_LE(num, 20);
+			EXPECT_GE(num, 1u);
+			EXPECT_LE(num, 20u);
 		}
 	}
 	EXPECT_LE((double)failures / (successes + failures), 0.2) << "failure rate too high";

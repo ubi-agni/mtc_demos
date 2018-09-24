@@ -222,8 +222,8 @@ TEST(Yumi, handover) {
 	}
 
 	auto num = t.solutions().size();
-	EXPECT_GE(num, 30);
-	EXPECT_LE(num, 100);
+	EXPECT_GE(num, 30u);
+	EXPECT_LE(num, 100u);
 
 	if (do_pause) waitForKey();
 }
