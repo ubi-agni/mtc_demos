@@ -38,11 +38,13 @@ void plan(Task &t, bool right_side) {
 	std::string eef = side.substr(0,1) + "a_tool_mount";
 	std::string arm = side + "_arm";
 
+	t.loadRobotModel();
 	Stage* initial_stage = nullptr;
 	// create a fixed initial scene
 	{
 		auto scene = std::make_shared<planning_scene::PlanningScene>(t.getRobotModel());
 		auto& state = scene->getCurrentStateNonConst();
+		state.setToDefaultValues();
 		state.setToDefaultValues(state.getJointModelGroup("left_arm"), "home");
 		state.setToDefaultValues(state.getJointModelGroup("right_arm"), "home");
 		state.update();
@@ -82,7 +84,7 @@ void plan(Task &t, bool right_side) {
 		                  tool_frame);
 
 	// pick container, using the generated grasp generator
-	auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator));
+	auto pick = std::make_unique<stages::Pick>(std::move(grasp));
 	pick->cartesianSolver()->setProperty("jump_threshold", 0.0); // disable jump check, see MoveIt #773
 	pick->setProperty("eef", eef);
 	pick->setProperty("object", std::string("object"));
