@@ -59,7 +59,7 @@ Task createTask(const std::string& object = "object") {
 
 	geometry_msgs::PoseStamped ik_frame_right;
 	ik_frame_right.header.frame_id = "r_grasp_frame";
-	tf::poseEigenToMsg(Eigen::Affine3d(Eigen::Translation3d(0.0,0.05,0.0)),
+	tf::poseEigenToMsg(Eigen::Isometry3d(Eigen::Translation3d(0.0,0.05,0.0)),
 	                   ik_frame_right.pose);
 
 
