@@ -145,7 +145,7 @@ Task createTask() {
 		geometry_msgs::TwistStamped motion;
 		motion.header.frame_id = tool_frame;
 		motion.twist.linear.z = -1.0;
-		retract->setGoal(motion);
+		retract->setDirection(motion);
 		retract->setProperty("min_distance", 0.05);
 		retract->setProperty("max_distance", 0.1);
 		ungrasp->insert(std::move(retract), -1);  // insert retract as last stage in ungrasp

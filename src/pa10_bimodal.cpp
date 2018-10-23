@@ -97,7 +97,7 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 	twist.header.frame_id = "object";
 	twist.twist.linear.y = 1;
 	twist.twist.angular.y = 2;
-	move->setGoal(twist);
+	move->setDirection(twist);
 	pick->insert(std::move(move));
 
 	pick->insert(std::move(connect), 0);

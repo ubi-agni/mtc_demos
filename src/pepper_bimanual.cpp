@@ -102,7 +102,7 @@ Task createTask(const std::string& object = "object") {
 			move->setGroup(group_link.first);
 			move->setIKFrame(group_link.second);
 			twist.header.frame_id = group_link.second;
-			move->setGoal(twist);
+			move->setDirection(twist);
 			move->setMinMaxDistance(0.05, 0.10);
 			merger->insert(std::unique_ptr<Stage>(move));
 		}
@@ -152,7 +152,7 @@ Task createTask(const std::string& object = "object") {
 			move->setGroup(group_link.first);
 			move->setIKFrame(group_link.second);
 			twist.header.frame_id = group_link.second;
-			move->setGoal(twist);
+			move->setDirection(twist);
 			move->setMinMaxDistance(0.02, 0.03);
 			merger->insert(std::unique_ptr<Stage>(move));
 		}
@@ -192,7 +192,7 @@ Task createTask(const std::string& object = "object") {
 			std::string shoulder_joint(1, std::toupper(arm[0]));
 			shoulder_joint.append("ShoulderPitch");
 			goal[shoulder_joint] = -0.25;
-			move->setGoal(goal);
+			move->setDirection(goal);
 			merger->insert(std::unique_ptr<Stage>(move));
 		}
 		pick->insert(std::unique_ptr<Stage>(merger));
