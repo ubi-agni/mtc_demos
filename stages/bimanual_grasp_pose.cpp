@@ -84,14 +84,14 @@ void BimanualGraspPose::init(const core::RobotModelConstPtr& robot_model)
 void BimanualGraspPose::onNewSolution(const SolutionBase& s)
 {
 	planning_scene::PlanningScenePtr scene = s.end()->scene()->diff();
+	robot_state::RobotState &robot_state = scene->getCurrentStateNonConst();
 
 	// set end effector poses
 	for (const auto& pair : eefs_) {
 		const moveit::core::JointModelGroup* jmg = scene->getRobotModel()->getEndEffector(pair.first);
-
-		robot_state::RobotState &robot_state = scene->getCurrentStateNonConst();
 		robot_state.setToDefaultValues(jmg , pair.second);
 	}
+	robot_state.update();
 
 	const std::string& object_name = properties().get<std::string>("object");
 	collision_detection::World::ObjectConstPtr object = scene->getWorld()->getObject(object_name);
