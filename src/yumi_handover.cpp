@@ -216,7 +216,7 @@ TEST(Yumi, handover) {
 	spawnObjects();
 
 	try {
-		ASSERT_TRUE(t.plan()) << "planning failed" << std::endl << t;
+		EXPECT_TRUE(t.plan()) << "planning failed" << std::endl << t;
 	} catch (const InitStageException &e) {
 		ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
 	}
