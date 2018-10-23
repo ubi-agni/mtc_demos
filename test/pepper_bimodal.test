@@ -13,5 +13,5 @@
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
 	<node pkg="tf" type="static_transform_publisher" name="virtual_odom" args="0 0 0  0 0 0 /odom /base_footprint 100"/>
 
-	<test pkg="mtc_demos" type="pepper_bimodal" test-name="pepper_bimodal" args="nowait"/>
+	<test pkg="mtc_demos" type="pepper_bimodal" test-name="pepper_bimodal" args="nowait" time-limit="120"/>
 </launch>
