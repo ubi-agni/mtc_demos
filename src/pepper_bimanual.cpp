@@ -103,7 +103,7 @@ Task createTask(const std::string& object = "object") {
 			move->setGroup(group_link.first);
 			move->setIKFrame(group_link.second);
 			twist.header.frame_id = group_link.second;
-			move->setGoal(twist);
+			move->setDirection(twist);
 			move->setMinMaxDistance(0.05, 0.10);
 			merger->insert(std::unique_ptr<Stage>(move));
 		}

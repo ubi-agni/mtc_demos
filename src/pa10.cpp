@@ -110,7 +110,7 @@ void plan(Task &t, bool right_side) {
 	twist.header.frame_id = "object";
 	twist.twist.linear.y = 1;
 	twist.twist.angular.y = 2;
-	move->setGoal(twist);
+	move->setDirection(twist);
 	t.add(std::move(move));
 
 	t.plan();

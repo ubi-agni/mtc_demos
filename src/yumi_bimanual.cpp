@@ -186,7 +186,7 @@ Task createTask() {
 			const auto& group_link = eef_jmg->getEndEffectorParentGroup();
 			move->setGroup(group_link.first);
 			move->setIKFrame(group_link.second);
-			move->setGoal(twist);
+			move->setDirection(twist);
 			move->setMinMaxDistance(0.03, 0.05);
 			merger->insert(std::unique_ptr<Stage>(move));
 		}
