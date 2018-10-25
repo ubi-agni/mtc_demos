@@ -66,7 +66,6 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 
 	// planners
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	auto interpolate = std::make_shared<solvers::JointInterpolationPlanner>();
 	auto cartesian = std::make_shared<solvers::CartesianPath>();

@@ -48,7 +48,6 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 
 	// planner used for connect
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	pipeline->properties().set("max_velocity_scaling_factor", 0.1);
 	// connect to pick
