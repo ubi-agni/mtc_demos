@@ -15,7 +15,11 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <eigen_conversions/eigen_msg.h>
 
+#include <gtest/gtest.h>
+#include "test_utils.h"
+
 using namespace moveit::task_constructor;
+bool do_pause = false;
 
 void spawnObjects() {
 	moveit::planning_interface::PlanningSceneInterface psi;
@@ -114,7 +118,7 @@ Task createTask() {
 			move->setGroup(group_link.first);
 			move->setIKFrame(group_link.second);
 			twist.header.frame_id = group_link.second;
-			move->along(twist);
+			move->setGoal(twist);
 			move->setMinMaxDistance(0.05, 0.10);
 			merger->insert(std::unique_ptr<Stage>(move));
 		}
@@ -132,7 +136,7 @@ Task createTask() {
 		ik_inner->setEndEffector(eef_right);
 		ik_inner->properties().property("target_pose").configureInitFrom(Stage::INTERFACE, "target_pose_right");
 		ik_inner->setIKFrame(ik_frame_right);
-		ik_inner->setProperty("forward_properties", std::set<std::string>({"target_pose_left", "target_pose_right"}));
+		ik_inner->setForwardedProperties({"target_pose_left", "target_pose_right"});
 
 		// outer IK: left hand
 		auto ik_outer = new stages::ComputeIK("compute ik left", std::unique_ptr<Stage>(ik_inner));
@@ -182,7 +186,7 @@ Task createTask() {
 			const auto& group_link = eef_jmg->getEndEffectorParentGroup();
 			move->setGroup(group_link.first);
 			move->setIKFrame(group_link.second);
-			move->along(twist);
+			move->setGoal(twist);
 			move->setMinMaxDistance(0.03, 0.05);
 			merger->insert(std::unique_ptr<Stage>(move));
 		}
@@ -193,23 +197,29 @@ Task createTask() {
 	return t;
 }
 
+TEST(Yumi, bimanual) {
+	Task t = createTask();
+	spawnObjects();
+
+	try {
+		ASSERT_TRUE(t.plan()) << "planning failed" << std::endl << t;
+	} catch (const InitStageException &e) {
+		ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
+	}
+
+	auto num = t.solutions().size();
+	EXPECT_GE(num, 4);
+	EXPECT_LE(num, 10);
+
+	if (do_pause) waitForKey();
+}
+
 int main(int argc, char** argv){
+	testing::InitGoogleTest(&argc, argv);
 	ros::init(argc, argv, "yumi");
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
 
-	Task t = createTask();
-	try {
-		spawnObjects();
-		t.plan();
-		std::cout << "waiting for any key + <enter>\n";
-		char ch;
-		std::cin >> ch;
-	}
-	catch (const InitStageException &e) {
-		std::cerr << e << t;
-		return EINVAL;
-	}
-
-	return 0;
+	do_pause = doPause(argc, argv);
+	return RUN_ALL_TESTS();
 }

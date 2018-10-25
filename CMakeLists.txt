@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 	moveit_ros_planning_interface
 	moveit_task_constructor_core
 	rviz_marker_tools
+	rostest
 )
 
 catkin_package(
@@ -25,42 +26,5 @@ include_directories(
 )
 
 add_subdirectory(stages)
-
-add_executable(baxter src/baxter.cpp)
-target_link_libraries(baxter ${catkin_LIBRARIES})
-
-add_executable(pr2 src/pr2.cpp)
-target_link_libraries(pr2 ${catkin_LIBRARIES})
-
-add_executable(pa10 src/pa10.cpp)
-target_link_libraries(pa10 ${catkin_LIBRARIES})
-
-add_executable(pepper src/pepper.cpp)
-target_link_libraries(pepper ${catkin_LIBRARIES})
-
-
-add_executable(bimodal_baxter src/bimodal_baxter.cpp)
-target_link_libraries(bimodal_baxter ${catkin_LIBRARIES})
-
-add_executable(bimodal_pr2 src/bimodal_pr2.cpp)
-target_link_libraries(bimodal_pr2 ${catkin_LIBRARIES})
-
-add_executable(bimodal_pa10 src/bimodal_pa10.cpp)
-target_link_libraries(bimodal_pa10 ${catkin_LIBRARIES})
-
-add_executable(bimodal_pepper src/bimodal_pepper.cpp)
-target_link_libraries(bimodal_pepper ${catkin_LIBRARIES})
-
-add_executable(kuka_bimodal src/kuka_bimodal.cpp)
-target_link_libraries(kuka_bimodal ${PROJECT_NAME}_stages ${catkin_LIBRARIES} gtest)
-
-
-add_executable(bimanual_pepper src/bimanual_pepper.cpp)
-target_link_libraries(bimanual_pepper ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
-
-
-add_executable(yumi_handover src/yumi_handover.cpp)
-target_link_libraries(yumi_handover ${catkin_LIBRARIES})
-
-add_executable(yumi_bimanual src/yumi_bimanual.cpp)
-target_link_libraries(yumi_bimanual ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
+add_subdirectory(src)
+add_subdirectory(test)

@@ -34,46 +34,16 @@
 
 /* Authors: Robert Haschke */
 
-#include <moveit/task_constructor/stage.h>
-#include <moveit/task_constructor/stages/generate_pose.h>
-#include <actionlib/client/simple_action_client.h>
-#include <grasping_msgs/GenerateGraspsAction.h>
-
+#include <moveit/task_constructor/stages/generate_grasp_pose.h>
 #pragma once
 
 namespace moveit { namespace task_constructor { namespace stages {
 
-/** Call an actionlib server to provide grasps via grasping_msgs::GenerateGraspsAction
- */
-class GraspProvider : public MonitoringGenerator {
+/** Generate a hand pose to touch an object */
+class GenerateTouchPose : public GenerateGraspPose {
 public:
-	GraspProvider(const std::string& action_name = "grasp_provider");
-
-	void reset() override;
-	void init(const moveit::core::RobotModelConstPtr &robot_model) override;
-	bool canCompute() const override;
+	GenerateTouchPose(const std::string& name = "touch_pose");
 	void compute() override;
-
-	void setObject(const std::string &object) {
-		setProperty("object", object);
-	}
-
-protected:
-	void onNewSolution(const SolutionBase& s) override;
-
-	// TODO: SimpleActionClient/Server cannot handle parallel requests!
-	actionlib::SimpleActionClient<grasping_msgs::GenerateGraspsAction> ac_;
-	std::list<std::pair<planning_scene::PlanningSceneConstPtr, grasping_msgs::GenerateGraspsGoal>> pending_requests_;
-	struct Grasps {
-		planning_scene::PlanningSceneConstPtr scene;
-		grasping_msgs::GenerateGraspsResultConstPtr grasps;
-		size_t index;
-	};
-	std::list<Grasps> pending_grasps_;
-
-private:
-	void sendNextRequest();
-	moveit_msgs::RobotState posture(const trajectory_msgs::JointTrajectory& t);
 };
 
 } } }
