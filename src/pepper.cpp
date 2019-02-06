@@ -51,7 +51,6 @@ void plan(Task &t, bool right_side) {
 
 	// planner used for connect
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = {{eef, pipeline}, {arm, pipeline}};

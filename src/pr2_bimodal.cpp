@@ -46,7 +46,6 @@ void fill(ParallelContainerBase &container, Stage* initial_stage, bool right_sid
 
 	// planner used for connect
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = {{eef, pipeline}, {arm, pipeline}};
@@ -116,8 +115,8 @@ TEST(PR2, bimodal) {
 			++successes;
 			solutions += num;
 
-			EXPECT_GE(num, 1);
-			EXPECT_LE(num, 20);
+			EXPECT_GE(num, 1u);
+			EXPECT_LE(num, 20u);
 		}
 	}
 	EXPECT_LE((double)failures / (successes + failures), 0.2) << "failure rate too high";

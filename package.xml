@@ -10,13 +10,11 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>moveit_ros_planning_interface</build_depend>
-  <build_depend>moveit_task_constructor_core</build_depend>
-  <build_depend>grasping_msgs</build_depend>
-
-  <exec_depend>moveit_ros_planning_interface</exec_depend>
-  <exec_depend>moveit_task_constructor_core</exec_depend>
-  <exec_depend>grasping_msgs</exec_depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>moveit_task_constructor_core</depend>
+  <depend>rviz_marker_tools</depend>
+  <depend>eigen_conversions</depend>
+  <depend>grasping_msgs</depend>
 
   <export>
   </export>

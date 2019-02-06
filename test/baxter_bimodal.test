@@ -13,5 +13,5 @@
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
 	<node pkg="tf" type="static_transform_publisher" name="world_joint" args="0 0 0  0 0 0 /world /base 100"/>
 
-	<test pkg="mtc_demos" type="baxter_bimodal" test-name="baxter_bimodal" args="nowait" time-limit="120"/>
+	<test pkg="mtc_demos" type="baxter_bimodal" test-name="baxter_bimodal" args="nowait" time-limit="600"/>
 </launch>

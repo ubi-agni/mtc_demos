@@ -51,12 +51,12 @@ GenerateTouchPose::GenerateTouchPose(const std::string& name)
 
 // TODO: move into MoveIt core
 moveit::core::AABB getAABB(const std::vector<shapes::ShapeConstPtr>& shapes,
-                           const EigenSTL::vector_Affine3d& shape_poses) {
+                           const EigenSTL::vector_Isometry3d& shape_poses) {
 	core::AABB aabb;
 
 	for (std::size_t i = 0; i < shapes.size(); ++i)
 	{
-		const Eigen::Affine3d& transform = shape_poses[i];
+		const Eigen::Isometry3d& transform = shape_poses[i];
 
 		if (shapes[i]->type != shapes::MESH)
 		{

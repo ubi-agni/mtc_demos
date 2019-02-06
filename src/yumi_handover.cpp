@@ -61,7 +61,6 @@ Task createTask() {
 	std::string arm = "right_arm";
 
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 
 	auto cartesian = std::make_shared<solvers::CartesianPath>();
@@ -146,7 +145,7 @@ Task createTask() {
 		geometry_msgs::TwistStamped motion;
 		motion.header.frame_id = tool_frame;
 		motion.twist.linear.z = -1.0;
-		retract->setGoal(motion);
+		retract->setDirection(motion);
 		retract->setProperty("min_distance", 0.05);
 		retract->setProperty("max_distance", 0.1);
 		ungrasp->insert(std::move(retract), -1);  // insert retract as last stage in ungrasp
@@ -217,14 +216,14 @@ TEST(Yumi, handover) {
 	spawnObjects();
 
 	try {
-		ASSERT_TRUE(t.plan()) << "planning failed" << std::endl << t;
+		EXPECT_TRUE(t.plan()) << "planning failed" << std::endl << t;
 	} catch (const InitStageException &e) {
 		ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
 	}
 
 	auto num = t.solutions().size();
-	EXPECT_GE(num, 30);
-	EXPECT_LE(num, 100);
+	EXPECT_GE(num, 30u);
+	EXPECT_LE(num, 100u);
 
 	if (do_pause) waitForKey();
 }

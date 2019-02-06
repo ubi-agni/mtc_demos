@@ -12,5 +12,5 @@
 	</node>
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
 
-	<test pkg="mtc_demos" type="yumi_handover" test-name="yumi_handover" args="nowait"/>
+	<test pkg="mtc_demos" type="yumi_handover" test-name="yumi_handover" args="nowait" time-limit="120"/>
 </launch>

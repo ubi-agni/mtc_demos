@@ -38,11 +38,13 @@ void plan(Task &t, bool right_side) {
 	std::string eef = side.substr(0,1) + "a_tool_mount";
 	std::string arm = side + "_arm";
 
+	t.loadRobotModel();
 	Stage* initial_stage = nullptr;
 	// create a fixed initial scene
 	{
 		auto scene = std::make_shared<planning_scene::PlanningScene>(t.getRobotModel());
 		auto& state = scene->getCurrentStateNonConst();
+		state.setToDefaultValues();
 		state.setToDefaultValues(state.getJointModelGroup("left_arm"), "home");
 		state.setToDefaultValues(state.getJointModelGroup("right_arm"), "home");
 		state.update();
@@ -56,7 +58,6 @@ void plan(Task &t, bool right_side) {
 
 	// planner used for connect
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = {{side + "_hand", pipeline}, {arm, pipeline}};
@@ -83,7 +84,7 @@ void plan(Task &t, bool right_side) {
 		                  tool_frame);
 
 	// pick container, using the generated grasp generator
-	auto pick = std::make_unique<stages::Pick>(std::move(grasp_generator));
+	auto pick = std::make_unique<stages::Pick>(std::move(grasp));
 	pick->cartesianSolver()->setProperty("jump_threshold", 0.0); // disable jump check, see MoveIt #773
 	pick->setProperty("eef", eef);
 	pick->setProperty("object", std::string("object"));
@@ -110,7 +111,7 @@ void plan(Task &t, bool right_side) {
 	twist.header.frame_id = "object";
 	twist.twist.linear.y = 1;
 	twist.twist.angular.y = 2;
-	move->setGoal(twist);
+	move->setDirection(twist);
 	t.add(std::move(move));
 
 	t.plan();

@@ -112,7 +112,7 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 		geometry_msgs::Vector3Stamped direction;
 		direction.header.frame_id = "world";
 		direction.vector.z = -1.0;
-		approach->setGoal(direction);
+		approach->setDirection(direction);
 		approach->setMinMaxDistance(0.03, 0.05);
 		t.add(std::unique_ptr<Stage>(approach));
 	}
@@ -124,7 +124,7 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 		geometry_msgs::Vector3Stamped direction;
 		direction.header.frame_id = "world";
 		direction.vector.z = -1.0;
-		approach->setGoal(direction);
+		approach->setDirection(direction);
 		approach->setMinMaxDistance(0.0499, 0.05);
 		t.add(std::unique_ptr<Stage>(approach));
 	}
@@ -158,7 +158,7 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 		geometry_msgs::Vector3Stamped direction;
 		direction.header.frame_id = "world";
 		direction.vector.z = 1.0;
-		approach->setGoal(direction);
+		approach->setDirection(direction);
 		approach->setMinMaxDistance(0.0499, 0.05);
 		t.add(std::unique_ptr<Stage>(approach));
 	}
@@ -247,7 +247,7 @@ Task* graspAndDrop(const std::string& name, const std::string& side)
 		geometry_msgs::TwistStamped twist;
 		twist.header.frame_id = tool_frame;
 		twist.twist.angular.y = side == "left" ? -0.2 : 0.2;
-		move->setGoal(twist);
+		move->setDirection(twist);
 		move->setProperty("marker_ns", "turn");
 		t.add(std::unique_ptr<Stage>(move));
 	}
@@ -284,7 +284,7 @@ Task* graspAndDrop(const std::string& name, const std::string& side)
 		geometry_msgs::Vector3Stamped v;
 		v.header.frame_id = "world";
 		v.vector.x = side == "left" ? 0.15 : -0.15;
-		move->setGoal(v);
+		move->setDirection(v);
 		t.add(std::unique_ptr<Stage>(move));
 	}
 

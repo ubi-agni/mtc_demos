@@ -50,7 +50,6 @@ void plan(Task &t, bool right_side) {
 
 	// planner used for connect
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setTimeout(8.0);
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = {{eef, pipeline}, {arm, pipeline}};
@@ -66,7 +65,7 @@ void plan(Task &t, bool right_side) {
 	grasp_generator->setMonitoredStage(initial_stage);
 
 	auto grasp = std::make_unique<stages::SimpleGrasp>(std::move(grasp_generator));
-	grasp->setIKFrame(Eigen::Affine3d::Identity(), tool_frame);
+	grasp->setIKFrame(Eigen::Isometry3d::Identity(), tool_frame);
 
 	// pick container, using the generated grasp generator
 	auto pick = std::make_unique<stages::Pick>(std::move(grasp));
