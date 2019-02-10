@@ -83,15 +83,7 @@ void BimanualGraspPose::init(const core::RobotModelConstPtr& robot_model)
 
 void BimanualGraspPose::onNewSolution(const SolutionBase& s)
 {
-	planning_scene::PlanningScenePtr scene = s.end()->scene()->diff();
-	robot_state::RobotState &robot_state = scene->getCurrentStateNonConst();
-
-	// set end effector poses
-	for (const auto& pair : eefs_) {
-		const moveit::core::JointModelGroup* jmg = scene->getRobotModel()->getEndEffector(pair.first);
-		robot_state.setToDefaultValues(jmg , pair.second);
-	}
-	robot_state.update();
+	planning_scene::PlanningSceneConstPtr scene = s.end()->scene();
 
 	const std::string& object_name = properties().get<std::string>("object");
 	collision_detection::World::ObjectConstPtr object = scene->getWorld()->getObject(object_name);
@@ -104,14 +96,21 @@ void BimanualGraspPose::onNewSolution(const SolutionBase& s)
 		return;
 	}
 
-	scenes_.push_back(scene);
+	upstream_solutions_.push(&s);
 }
 
 void BimanualGraspPose::compute(){
-	if (scenes_.empty())
+	if (upstream_solutions_.empty())
 		return;
-	planning_scene::PlanningSceneConstPtr scene = scenes_[0];
-	scenes_.pop_front();
+	planning_scene::PlanningScenePtr scene = upstream_solutions_.pop()->end()->scene()->diff();
+
+	// set end effector poses
+	robot_state::RobotState &robot_state = scene->getCurrentStateNonConst();
+	for (const auto& pair : eefs_) {
+		const moveit::core::JointModelGroup* jmg = scene->getRobotModel()->getEndEffector(pair.first);
+		robot_state.setToDefaultValues(jmg , pair.second);
+	}
+	robot_state.update();
 
 	const std::string& object_name = properties().get<std::string>("object");
 	shapes::ShapeConstPtr shape = scene->getWorld()->getObject(object_name)->shapes_.front();

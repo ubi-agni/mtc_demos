@@ -49,10 +49,9 @@ GenerateTouchPose::GenerateTouchPose(const std::string& name)
 
 void GenerateTouchPose::compute()
 {
-	if (scenes_.empty())
+	if (upstream_solutions_.empty())
 		return;
-	planning_scene::PlanningScenePtr scene = scenes_[0];
-	scenes_.pop_front();
+	planning_scene::PlanningScenePtr scene = upstream_solutions_.pop()->end()->scene()->diff();
 
 	const auto& props = properties();
 	const std::string& object_name = props.get<std::string>("object");
