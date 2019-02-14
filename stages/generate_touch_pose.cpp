@@ -84,10 +84,9 @@ Eigen::Vector3d touchPoint(const collision_detection::World::ObjectConstPtr &obj
 
 void GenerateTouchPose::compute()
 {
-	if (scenes_.empty())
+	if (upstream_solutions_.empty())
 		return;
-	planning_scene::PlanningScenePtr scene = scenes_[0];
-	scenes_.pop_front();
+	planning_scene::PlanningScenePtr scene = upstream_solutions_.pop()->end()->scene()->diff();
 
 	const auto& props = properties();
 	const std::string& object = props.get<std::string>("object");
