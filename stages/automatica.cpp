@@ -64,8 +64,9 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 	std::string eef = side.substr(0,1) + "a_tool_mount";
 	std::string tool_frame = side.substr(0,1) + "h_tool_frame";
 
-	Task* task = new Task(name);
+	Task* task = new Task();
 	Task& t = *task;
+	t.stages()->setName(name);
 
 	Stage* initial = new stages::CurrentState("current");
 	t.add(std::unique_ptr<Stage>(initial));
@@ -168,8 +169,9 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 
 Task* grasp(const std::string& name, const std::string& side)
 {
-	Task* task = new Task(name);
+	Task* task = new Task();
 	Task& t = *task;
+	t.stages()->setName(name);
 
 	Stage* initial = new stages::CurrentState("current");
 	t.add(std::unique_ptr<Stage>(initial));
@@ -295,8 +297,9 @@ Task* juggleStart()
 {
 	const std::string side = "left";
 
-	Task* task = new Task("");
+	Task* task = new Task();
 	Task& t = *task;
+	t.stages()->setName("juggle start");
 
 	Stage* initial = new stages::CurrentState("current");
 	t.add(std::unique_ptr<Stage>(initial));
@@ -328,6 +331,7 @@ Task* juggle()
 {
 	Task* task = juggleStart();
 	Task& t = *task;
+	t.stages()->setName("juggle");
 
 	// planners
 	auto planner = std::make_shared<solvers::JointInterpolationPlanner>();
