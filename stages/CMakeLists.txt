@@ -2,6 +2,7 @@ set(SOURCES
 	bimanual_grasp_pose.cpp
 	generate_touch_pose.cpp
 	grasp_provider.cpp
+	grasping_tasks.cpp
 	automatica.cpp
 )
 add_library(${PROJECT_NAME}_stages ${SOURCES})

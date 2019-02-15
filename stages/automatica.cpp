@@ -36,6 +36,7 @@
 
 #include "automatica.h"
 #include "generate_touch_pose.h"
+#include "grasping_tasks.h"
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
 #include <moveit/task_constructor/solvers/cartesian_path.h>
 #include <moveit/task_constructor/solvers/joint_interpolation.h>
@@ -169,63 +170,7 @@ Task* approachAndPush(const std::string& name, const std::string& side)
 
 Task* grasp(const std::string& name, const std::string& side)
 {
-	Task* task = new Task();
-	Task& t = *task;
-	t.stages()->setName(name);
-
-	Stage* initial = new stages::CurrentState("current");
-	t.add(std::unique_ptr<Stage>(initial));
-
-	{
-		auto fix = new stages::FixCollisionObjects();
-		fix->setMaxPenetration(0.04);
-		t.add(std::unique_ptr<Stage>(fix));
-		initial = fix;
-	}
-
-
-	std::string tool_frame = side.substr(0,1) + "h_tool_frame";
-	std::string eef = side.substr(0,1) + "a_tool_mount";
-	std::string arm = side + "_arm";
-	std::string config = "shadow_" + side + "_handed_limited";
-
-	// planner used for connect
-	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
-	pipeline->setPlannerId("RRTConnectkConfigDefault");
-	pipeline->properties().set("max_velocity_scaling_factor", 0.1);
-	// connect to pick
-	stages::Connect::GroupPlannerVector planners = {{side + "_hand", pipeline}, {arm, pipeline}};
-	auto connect = new stages::Connect("connect", planners);
-	connect->properties().configureInitFrom(Stage::PARENT);
-	connect->properties().set("merge_mode", stages::Connect::SEQUENTIAL);
-	t.add(std::unique_ptr<Stage>(connect));
-
-	// grasp generator
-	auto grasp_generator = new stages::GraspProvider();
-	grasp_generator->setProperty("config", config);
-	grasp_generator->setMonitoredStage(initial);
-
-	auto grasp = new stages::SimpleGrasp(std::unique_ptr<MonitoringGenerator>(grasp_generator));
-	grasp->setIKFrame(tool_frame);
-
-	// pick container, using the generated grasp generator
-	auto pick = new stages::Pick(std::unique_ptr<Stage>(grasp), side);
-	pick->setProperty("eef", eef);
-	pick->properties().configureInitFrom(Stage::PARENT, { "object" });
-	geometry_msgs::TwistStamped approach;
-	approach.header.frame_id = tool_frame;
-	approach.twist.linear.z = 1.0;
-	pick->setApproachMotion(approach, 0.05, 0.1);
-
-	geometry_msgs::TwistStamped lift;
-	lift.header.frame_id = "frame";
-	lift.twist.linear.z = 1.0;
-	pick->setLiftMotion(lift, 0.03, 0.05);
-
-	// finalize
-	t.add(std::unique_ptr<Stage>(pick));
-
-	return task;
+	return pick(name, side);
 }
 
 Task* graspAndDrop(const std::string& name, const std::string& side)
