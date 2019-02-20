@@ -28,6 +28,6 @@ install(TARGETS ${STAGES_LIB_NAME}
 foreach(tgt ${STAGES_LIB_NAME})
 add_custom_command(TARGET ${tgt} POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E create_symlink "$<TARGET_FILE:${tgt}>" "${CMAKE_CURRENT_SOURCE_DIR}/../src/${MOVEIT_PYTHON_MODULE_PATH}/$<TARGET_FILE_NAME:${tgt}>"
-	COMMENT "Creating symlink to $<TARGET_FILE_NAME:${tgt}> in source space"
+	COMMENT "Creating symlink to ${tgt} in source space"
 )
 endforeach()
