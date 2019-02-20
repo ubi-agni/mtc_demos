@@ -38,6 +38,7 @@
 #include <grasping_msgs/GraspPlanningAction.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_state/conversions.h>
+#include <rviz_marker_tools/marker_creation.h>
 
 namespace moveit { namespace task_constructor { namespace stages {
 
@@ -132,6 +133,9 @@ void GraspProvider::compute()
 	SubTrajectory solution;
 	solution.setCost(grasp->grasp_quality);
 	solution.setComment(grasp->id);
+	// add frame at target pose
+	rviz_marker_tools::appendFrame(solution.markers(), grasp->grasp_pose, 0.1, "grasp frame");
+
 	spawn(std::move(state), std::move(solution));
 }
 
