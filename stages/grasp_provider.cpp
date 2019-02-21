@@ -39,6 +39,7 @@
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_state/conversions.h>
 #include <rviz_marker_tools/marker_creation.h>
+#include <eigen_conversions/eigen_msg.h>
 
 namespace moveit { namespace task_constructor { namespace stages {
 
@@ -135,6 +136,11 @@ void GraspProvider::compute()
 	solution.setComment(grasp->id);
 	// add frame at target pose
 	rviz_marker_tools::appendFrame(solution.markers(), grasp->grasp_pose, 0.1, "grasp frame");
+	// append object frame
+	geometry_msgs::PoseStamped pose_msg;
+	pose_msg.header.frame_id = scene->getPlanningFrame();
+	tf::poseEigenToMsg(scene->getFrameTransform(properties().get<std::string>("object")), pose_msg.pose);
+	rviz_marker_tools::appendFrame(solution.markers(), pose_msg, 0.1, "object frame");
 
 	spawn(std::move(state), std::move(solution));
 }
