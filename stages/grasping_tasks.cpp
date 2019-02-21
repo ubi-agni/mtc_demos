@@ -57,12 +57,26 @@
 
 namespace moveit { namespace task_constructor { namespace stages {
 
+Stage* allowCollisions(const std::string& name,
+                       const std::vector<std::string>& first,
+                       const std::vector<std::string>& second,
+                       bool allow = true)
+{
+	auto allow_touch = new ModifyPlanningScene(name);
+	allow_touch->allowCollisions(first, second, allow);
+	return allow_touch;
+}
+
 Task* initAndFixCollisions(Stage** initial_out) {
 	Task* task = new Task();
 	Task& t = *task;
 
-	Stage* initial = new stages::CurrentState("current");
-	t.add(Stage::pointer(initial));
+	Stage* initial;
+	t.add(Stage::pointer(initial = new stages::CurrentState("current")));
+	t.add(Stage::pointer(initial =
+	      allowCollisions("allow fingertip-table collision", {"frame"},
+	{"rh_ffdistal", "rh_mfdistal", "rh_rfdistal", "rh_lfdistal", "rh_thdistal",
+	 "lh_ffdistal", "lh_mfdistal", "lh_rfdistal", "lh_lfdistal", "lh_thdistal"})));
 
 	auto fix = new stages::FixCollisionObjects();
 	fix->setMaxPenetration(0.04);
