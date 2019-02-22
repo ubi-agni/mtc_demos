@@ -132,7 +132,7 @@ void GraspProvider::compute()
 	                                        scene->getCurrentStateNonConst(), false);
 
 	SubTrajectory solution;
-	solution.setCost(grasp->grasp_quality);
+	solution.setCost(1.0 - grasp->grasp_quality);
 	solution.setComment(grasp->id);
 	// add frame at target pose
 	rviz_marker_tools::appendFrame(solution.markers(), grasp->grasp_pose, 0.1, "grasp frame");
