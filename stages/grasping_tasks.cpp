@@ -102,7 +102,6 @@ void addPick(ContainerBase& container, Stage* initial, const std::string& side) 
 	auto interpolate = std::make_shared<solvers::JointInterpolationPlanner>();
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
-	pipeline->properties().set("max_velocity_scaling_factor", 0.5);
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = {{hand, interpolate}, {arm, pipeline}};
 	auto connect = new stages::Connect("approach pick", planners);
@@ -147,7 +146,6 @@ void addPlace(ContainerBase& container, Stage* grasped, const std::string& side,
 	// planner used for connect
 	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
-	pipeline->properties().set("max_velocity_scaling_factor", 0.5);
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = {{arm, pipeline}};
 	auto connect = new stages::Connect("approach place", planners);
