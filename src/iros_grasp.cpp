@@ -52,8 +52,6 @@ void spawnObjects(int primitive, geometry_msgs::PoseStamped& pose_msg) {
 		default:
 			break;
 		}
-		// avoid collision with table (bug in FixCollision / FCL for boxes)
-		o.primitive_poses[0].position.z += 0.001;
 		break;
 	case shape_msgs::SolidPrimitive::SPHERE:
 		o.primitives[0].dimensions = {radius};

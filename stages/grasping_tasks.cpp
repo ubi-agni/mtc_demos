@@ -79,7 +79,10 @@ Task* initAndFixCollisions(Stage** initial_out) {
 	 "lh_ffdistal", "lh_mfdistal", "lh_rfdistal", "lh_lfdistal", "lh_thdistal"})));
 
 	auto fix = new stages::FixCollisionObjects();
-	fix->setMaxPenetration(0.04);
+	fix->setMaxPenetration(0.02);
+	geometry_msgs::Vector3 correction;
+	correction.z = 0.002;
+	fix->setDirection(correction);
 	t.add(Stage::pointer(fix));
 	initial = fix;
 
