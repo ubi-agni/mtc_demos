@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 
 		auto task = std::unique_ptr<Task>(bimodalPickPlace(pose));
 		task->setProperty("object", std::string("object"));
-		if (task->plan())
+		if (task->plan(10))
 			task->introspection().publishSolution(*task->solutions().front());
 
 		char ch; std::cin >> ch;
