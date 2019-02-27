@@ -91,7 +91,9 @@ Task* initAndFixCollisions(Stage** initial_out) {
 	return task;
 }
 
-void addPick(ContainerBase& container, Stage* initial, const std::string& side) {
+// add a pick sub task to container and return the created pick container
+ContainerBase* addPick(ContainerBase& container, Stage* initial,
+                       const std::string& side, const std::string& name="pick") {
 	const std::string tool_frame = side.substr(0,1) + "h_tool_frame";
 	const std::string eef = side.substr(0,1) + "a_tool_mount";
 	const std::string arm = side + "_arm";
@@ -116,7 +118,7 @@ void addPick(ContainerBase& container, Stage* initial, const std::string& side) 
 	grasp->setIKFrame(tool_frame);
 
 	// pick container, using the generated grasp generator
-	auto pick = new stages::Pick(Stage::pointer(grasp), "pick");
+	auto pick = new stages::Pick(Stage::pointer(grasp), name);
 	PropertyMap& props = pick->properties();
 	props.set("eef", eef);
 	props.declare<std::string>("object");
@@ -133,10 +135,12 @@ void addPick(ContainerBase& container, Stage* initial, const std::string& side) 
 	pick->setLiftMotion(lift, 0.03, 0.05);
 
 	container.insert(Stage::pointer(pick));
+	return pick;
 }
 
-void addPlace(ContainerBase& container, Stage* grasped, const std::string& side,
-              const geometry_msgs::PoseStamped& p) {
+// add a pick sub task to container and return the created pick container
+ContainerBase* addPlace(ContainerBase& container, Stage* grasped, const std::string& side,
+                        const geometry_msgs::PoseStamped& p, const std::string& name="place") {
 	const std::string tool_frame = side.substr(0,1) + "h_tool_frame";
 	const std::string eef = side.substr(0,1) + "a_tool_mount";
 	const std::string arm = side + "_arm";
@@ -148,7 +152,7 @@ void addPlace(ContainerBase& container, Stage* grasped, const std::string& side,
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = {{arm, pipeline}};
-	auto connect = new stages::Connect("approach place", planners);
+	auto connect = new stages::Connect("approach " + name, planners);
 	container.insert(Stage::pointer(connect));
 
 	// place generator
@@ -162,7 +166,7 @@ void addPlace(ContainerBase& container, Stage* grasped, const std::string& side,
 	ungrasp->setIKFrame(tool_frame);
 
 	// pick container, using the generated grasp generator
-	auto place = new stages::Place(Stage::pointer(ungrasp), "place");
+	auto place = new stages::Place(Stage::pointer(ungrasp), name);
 	PropertyMap& props = place->properties();
 	props.set("eef", eef);
 	props.declare<std::string>("object");
@@ -179,6 +183,7 @@ void addPlace(ContainerBase& container, Stage* grasped, const std::string& side,
 	place->setPlaceMotion(lift, 0.01, 0.1);
 
 	container.insert(Stage::pointer(place));
+	return place;
 }
 
 Task* pick(const std::string& name, const std::string& side) {
@@ -225,16 +230,71 @@ Task* bimodalTask(const std::string& name,
 
 Task* bimodalPick(const std::string& name)
 {
-	return bimodalTask(name, &addPick);
+	return bimodalTask(name, [](ContainerBase& container, Stage* initial, const std::string& side) {
+		addPick(container, initial, side);
+	});
 }
 
-Task* bimodalPickPlace(const geometry_msgs::PoseStamped& object_target_pose,
-                       const std::string& name)
+Task* bimodalPickPlace(const geometry_msgs::PoseStamped& object_target_pose, const std::string& name)
 {
 	return bimodalTask(name, [&](ContainerBase& container, Stage* initial, const std::string& side) {
 		addPick(container, initial, side);
 		addPlace(container, container.findChild("pick/grasp"), side, object_target_pose);
 	});
+}
+
+Task* bimanualPickPlace(const geometry_msgs::PoseStamped& object_target_pose,
+                        const std::string& name)
+{
+	// planners
+	auto interpolate = std::make_shared<solvers::JointInterpolationPlanner>();
+	auto cartesian = std::make_shared<solvers::CartesianPath>();
+	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
+	pipeline->setPlannerId("RRTkConfigDefault");
+
+	Task* task = pick(name, "right");
+	Stage* referenced_stage;
+	{
+		auto handover = new stages::MoveTo("move to handover", cartesian);
+		handover->setProperty("group", "right_arm");
+		handover->setTimeout(10.0);
+
+		geometry_msgs::PoseStamped target;
+		target.header.frame_id = "world";
+		target.pose.position.x =  0.0;
+		target.pose.position.y =  0.3;
+		target.pose.position.z =  0.2;
+		target.pose.orientation.x = 0.70711;
+		target.pose.orientation.x = 0.0;
+		target.pose.orientation.z = 0.70711;
+		target.pose.orientation.w = 0.0;
+		handover->setGoal(target);
+		handover->setIKFrame("rh_tool_frame");
+		referenced_stage = handover;
+		task->add(Stage::pointer(handover));
+	}
+#if 0
+	// connect to pick left
+	stages::Connect::GroupPlannerVector planners = {{"left_hand", interpolate}, {"left_arm", pipeline}};
+	auto connect = new stages::Connect("approach pick left", planners);
+	task->add(Stage::pointer(connect));
+#endif
+	ContainerBase* pick = addPick(*task->stages(), referenced_stage, "left", "pick left");
+	pick->remove(pick->findChild("lift object"));
+
+	ContainerBase* grasp = static_cast<ContainerBase*>(pick->findChild("grasp"));
+	auto* ungrasp = new stages::SimpleUnGrasp();
+	ungrasp->setEndEffector("right_hand");
+	ungrasp->properties().configureInitFrom(Stage::PARENT, {"object"});
+	ungrasp->setProperty("pregrasp", "open");
+
+	// HACK: restrict dir, container "ungrasp" should have its dir restricted
+	static_cast<PropagatingEitherWay*>(ungrasp->findChild("open gripper"))->restrictDirection(PropagatingEitherWay::FORWARD);
+	grasp->insert(Stage::pointer(ungrasp), -2);
+
+	addPlace(*task->stages(), pick->findChild("grasp"), "left", object_target_pose);
+
+	return task;
 }
 
 } } }

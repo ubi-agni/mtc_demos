@@ -44,3 +44,6 @@ target_link_libraries(yumi_bimanual ${PROJECT_NAME}_stages ${catkin_LIBRARIES} g
 
 add_executable(iros_grasp iros_grasp.cpp)
 target_link_libraries(iros_grasp ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
+
+add_executable(iros_bimanual iros_bimanual.cpp)
+target_link_libraries(iros_bimanual ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
