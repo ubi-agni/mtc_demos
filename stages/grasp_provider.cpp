@@ -78,8 +78,21 @@ void GraspProvider::onNewSolution(const SolutionBase& s)
 	const std::string& object_name = props.get<std::string>("object");
 	moveit_msgs::CollisionObject collision_object;
 	if (!scene->getCollisionObjectMsg(collision_object, object_name)) {
-		ROS_WARN_STREAM_NAMED("GraspProvider", "unknown object: " << object_name);
-		return;
+		moveit_msgs::AttachedCollisionObject attached_object;
+		if (!scene->getAttachedCollisionObjectMsg(attached_object, object_name)) {
+			ROS_WARN_STREAM_NAMED("GraspProvider", "unknown object: " << object_name);
+			return;
+		} else {
+			collision_object = attached_object.object;
+#if 1  // HACK: GraspProvider doesn't support frame_id other than world frame?
+			Eigen::Isometry3d link_pose, object_pose;
+			link_pose = scene->getCurrentState().getGlobalLinkTransform(collision_object.header.frame_id);
+			for (auto& pose_msg : collision_object.primitive_poses) {
+				tf::poseMsgToEigen(pose_msg, object_pose);
+				tf::poseEigenToMsg(link_pose * object_pose, pose_msg);
+			}
+#endif
+		}
 	}
 
 	grasping_msgs::GenerateGraspsGoal goal;
