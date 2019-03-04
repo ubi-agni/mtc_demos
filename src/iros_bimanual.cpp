@@ -14,16 +14,16 @@ void spawnObjects(int primitive, geometry_msgs::PoseStamped& pose_msg) {
 	double quat[4];  // x y z w
 
 	// random rotation about z-axis
-	Eigen::Isometry3d pose = Eigen::AngleAxisd(rng.uniformReal(-M_PI/2., M_PI/2.), Eigen::Vector3d::UnitZ())
+	Eigen::Isometry3d pose = Eigen::AngleAxisd(45./180.*M_PI, Eigen::Vector3d::UnitZ())
 	                         * Eigen::Translation3d::Identity();
 
-	double height = 0.25;
-	double radius = 0.03;
+	double height = 0.23;
+	double radius = 0.073 / 2.;
 	moveit_msgs::CollisionObject o;
 	o.id = "object";
 	o.header.frame_id = "world";
 	o.primitive_poses.resize(1);
-	o.primitive_poses[0].position.x = -0.6;
+	o.primitive_poses[0].position.x = -0.5;
 	o.primitive_poses[0].position.y = 0.30;
 	o.primitive_poses[0].position.z = height / 2.0;
 	o.primitive_poses[0].orientation.w = 1.0;
@@ -41,7 +41,7 @@ void spawnObjects(int primitive, geometry_msgs::PoseStamped& pose_msg) {
 	case shape_msgs::SolidPrimitive::SPHERE:  // we cannot handover a sphere
 	case shape_msgs::SolidPrimitive::BOX:
 		o.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
-		o.primitives[0].dimensions = {3*radius, 2*radius, height};
+		o.primitives[0].dimensions = {2*radius, 2*radius, height};  // milk
 #if 0 // lying?
 		switch(rng.uniformInteger(0, 2)) {
 #else
