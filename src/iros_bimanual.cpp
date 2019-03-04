@@ -42,7 +42,11 @@ void spawnObjects(int primitive, geometry_msgs::PoseStamped& pose_msg) {
 	case shape_msgs::SolidPrimitive::BOX:
 		o.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
 		o.primitives[0].dimensions = {3*radius, 2*radius, height};
-		switch (rng.uniformInteger(0, 2)) {
+#if 0 // lying?
+		switch(rng.uniformInteger(0, 2)) {
+#else
+		switch (0) {
+#endif
 		case 1:  // rotate about y axis
 			o.primitive_poses[0].position.z = o.primitives[0].dimensions[0] / 2.;
 			pose = pose * Eigen::AngleAxisd(M_PI/2., Eigen::Vector3d::UnitY());
@@ -71,7 +75,7 @@ int main(int argc, char** argv) {
 	while (true) {
 		// spawn a random object and retrieve it's pose
 		geometry_msgs::PoseStamped pose;
-		spawnObjects(rng.uniformInteger(1, 3), pose);
+		spawnObjects(shape_msgs::SolidPrimitive::BOX, pose);
 
 		// place always at same position and orientation
 		pose.pose.position.x = 0.7;
