@@ -42,6 +42,7 @@
 #include <moveit/task_constructor/stages/current_state.h>
 #include <moveit/task_constructor/stages/modify_planning_scene.h>
 #include <moveit/task_constructor/stages/fix_collision_objects.h>
+#include <moveit/task_constructor/stages/fixed_cartesian_poses.h>
 #include <moveit/task_constructor/stages/connect.h>
 #include <moveit/task_constructor/stages/compute_ik.h>
 #include <moveit/task_constructor/stages/move_to.h>
@@ -53,6 +54,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PointStamped.h>
+#include <eigen_conversions/eigen_msg.h>
 #include <tf/tf.h>
 
 namespace moveit { namespace task_constructor { namespace stages {
@@ -253,36 +255,45 @@ Task* bimanualPickPlace(const geometry_msgs::PoseStamped& object_target_pose,
 	pipeline->setPlannerId("RRTkConfigDefault");
 
 	Task* task = pick(name, "right");
-	Stage* referenced_stage;
-	{
-		auto handover = new stages::MoveTo("move to handover", cartesian);
-		handover->setProperty("group", "right_arm");
-		handover->setTimeout(10.0);
+	ContainerBase* grasp = static_cast<ContainerBase*>(task->stages()->findChild("pick"));
 
-		geometry_msgs::PoseStamped target;
-		target.header.frame_id = "world";
-		target.pose.position.x =  0.0;
-		target.pose.position.y =  0.3;
-		target.pose.position.z =  0.2;
-		target.pose.orientation.x = 0.70711;
-		target.pose.orientation.x = 0.0;
-		target.pose.orientation.z = 0.70711;
-		target.pose.orientation.w = 0.0;
-		handover->setGoal(target);
-		handover->setIKFrame("rh_tool_frame");
-		referenced_stage = handover;
-		task->add(Stage::pointer(handover));
+	{
+		stages::Connect::GroupPlannerVector planners = {{"right_arm", cartesian}};
+		auto connect = new stages::Connect("approach pick left", std::move(planners));
+		task->add(Stage::pointer(connect));
 	}
-#if 0
-	// connect to pick left
-	stages::Connect::GroupPlannerVector planners = {{"left_hand", interpolate}, {"left_arm", pipeline}};
-	auto connect = new stages::Connect("approach pick left", planners);
-	task->add(Stage::pointer(connect));
-#endif
-	ContainerBase* pick = addPick(*task->stages(), referenced_stage, "left", "pick left");
+
+	Stage* handover_stage;
+	{  // handover poses
+		auto poses = new stages::FixedCartesianPoses("handover poses");
+		poses->setMonitoredStage(grasp);
+
+		geometry_msgs::PoseStamped pose;
+		pose.header.frame_id = "world";
+		pose.pose.position.x =  0.0;
+		pose.pose.position.y =  0.3;
+		pose.pose.position.z =  0.2;
+		for (int x=0; x < 2; ++x) {  // rotation about x-axis
+			Eigen::Quaterniond base(Eigen::AngleAxisd(x * M_PI/2., Eigen::Vector3d::UnitX()));
+			for (int z=0; z < 4; ++z) {  // rotation about world's z-axis
+				Eigen::Quaterniond rot = Eigen::AngleAxisd(z * M_PI/2., Eigen::Vector3d::UnitZ()) * base;
+				tf::quaternionEigenToMsg(Eigen::Quaterniond(rot), pose.pose.orientation);
+				poses->addPose(pose);
+			}
+		}
+
+		auto ik = new stages::ComputeIK("handover", Stage::pointer(poses));
+		ik->setEndEffector("ra_tool_mount");
+		ik->setIKFrame("object");
+		ik->properties().configureInitFrom(Stage::INTERFACE, {"target_pose"});
+		handover_stage = ik;
+		task->add(Stage::pointer(ik));
+	}
+
+	ContainerBase* pick = addPick(*task->stages(), handover_stage, "left", "pick left");
 	pick->remove(pick->findChild("lift object"));
 
-	ContainerBase* grasp = static_cast<ContainerBase*>(pick->findChild("grasp"));
+	grasp = static_cast<ContainerBase*>(pick->findChild("grasp"));
 	auto* ungrasp = new stages::SimpleUnGrasp();
 	ungrasp->setEndEffector("right_hand");
 	ungrasp->properties().configureInitFrom(Stage::PARENT, {"object"});
