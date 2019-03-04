@@ -14,11 +14,11 @@ void spawnObjects(int primitive, geometry_msgs::PoseStamped& pose_msg) {
 	double quat[4];  // x y z w
 
 	// random rotation about z-axis
-	Eigen::Isometry3d pose = Eigen::AngleAxisd(45./180.*M_PI, Eigen::Vector3d::UnitZ())
+	Eigen::Isometry3d pose = Eigen::AngleAxisd(20./180.*M_PI, Eigen::Vector3d::UnitZ())
 	                         * Eigen::Translation3d::Identity();
 
-	double height = 0.23;
-	double radius = 0.073 / 2.;
+	double height = 0.26;
+	double radius = 0.076 / 2.;
 	moveit_msgs::CollisionObject o;
 	o.id = "object";
 	o.header.frame_id = "world";
@@ -33,7 +33,7 @@ void spawnObjects(int primitive, geometry_msgs::PoseStamped& pose_msg) {
 	switch (primitive) {
 	case shape_msgs::SolidPrimitive::CYLINDER:
 		o.primitives[0].dimensions = {height, radius};
-		if (int lying = rng.uniformInteger(0, 1)) {
+		if (int lying = 1) { // rng.uniformInteger(0, 1)) {
 			o.primitive_poses[0].position.z = radius;
 			pose = pose * Eigen::AngleAxisd(M_PI/2., Eigen::Vector3d::UnitY());
 		}
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
 	while (true) {
 		// spawn a random object and retrieve it's pose
 		geometry_msgs::PoseStamped pose;
-		spawnObjects(shape_msgs::SolidPrimitive::BOX, pose);
+		spawnObjects(shape_msgs::SolidPrimitive::CYLINDER, pose);
 
 		// place always at same position and orientation
 		pose.pose.position.x = 0.7;
