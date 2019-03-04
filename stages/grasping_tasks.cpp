@@ -257,6 +257,29 @@ Task* bimanualPickPlace(const geometry_msgs::PoseStamped& object_target_pose,
 	Task* task = pick(name, "right");
 	ContainerBase* grasp = static_cast<ContainerBase*>(task->stages()->findChild("pick"));
 
+	{  // replace "attach object"
+		ContainerBase* inner = static_cast<ContainerBase*>(grasp->findChild("grasp"));
+		inner->remove(inner->findChild("attach object"));
+
+		auto attach = new ModifyPlanningScene("attach object");
+		attach->setForwardedProperties({ "object", "eef", "pregrasp", "grasp" });
+
+		PropertyMap& p = attach->properties();
+		p.declare<std::string>("eef");
+		p.declare<std::string>("object");
+		p.configureInitFrom(Stage::PARENT | Stage::INTERFACE, { "eef", "object" });
+
+		attach->setCallback([](const planning_scene::PlanningScenePtr& scene, const PropertyMap& p){
+				const std::string& eef = p.get<std::string>("eef");
+				moveit_msgs::AttachedCollisionObject obj;
+				obj.object.operation = moveit_msgs::CollisionObject::ADD;
+				obj.link_name = scene->getRobotModel()->getEndEffector(eef)->getEndEffectorParentGroup().second;
+				obj.object.id = p.get<std::string>("object");
+				scene->processAttachedCollisionObjectMsg(obj);
+			});
+		inner->insert(Stage::pointer(attach), -1);
+	}
+
 	{
 		stages::Connect::GroupPlannerVector planners = {{"right_arm", cartesian}};
 		auto connect = new stages::Connect("approach pick left", std::move(planners));
