@@ -56,6 +56,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <tf/tf.h>
+#include <angles/angles.h>
 
 namespace moveit { namespace task_constructor { namespace stages {
 
@@ -188,6 +189,40 @@ ContainerBase* addPlace(ContainerBase& container, Stage* grasped, const std::str
 	return place;
 }
 
+// append a new sub task "shaking" to container and return the created container
+ContainerBase* addShaking(ContainerBase& container, const std::string& group, const std::string joint, unsigned int num) {
+	auto shaking = new SerialContainer("shaking");
+	container.insert(Stage::pointer(shaking));
+
+	auto interpolate = std::make_shared<solvers::JointInterpolationPlanner>();
+	std::map<std::string, double> joint_deltas;
+
+	for (int i = 0; i < num; ++i)
+	{
+		char name[20];
+		{
+			snprintf(name, sizeof(name), "forward%d", i);
+			auto forward = new stages::MoveRelative(name, interpolate);
+			PropertyMap& props = forward->properties();
+			props.set("group", group);
+			joint_deltas[joint] = angles::from_degrees(30);
+			props.set("direction", joint_deltas);
+			shaking->insert(Stage::pointer(forward));
+		}
+
+		{
+			snprintf(name, sizeof(name), "backward%d", i);
+			auto backward = new stages::MoveRelative(name, interpolate);
+			PropertyMap& props = backward->properties();
+			props.set("group", group);
+			joint_deltas[joint] = -angles::from_degrees(30);
+			props.set("direction", joint_deltas);
+			shaking->insert(Stage::pointer(backward));
+		}
+	}
+	return shaking;
+}
+
 Task* pick(const std::string& name, const std::string& side) {
 	Stage* initial;
 	Task* task = initAndFixCollisions(&initial);
@@ -243,6 +278,25 @@ Task* bimodalPickPlace(const geometry_msgs::PoseStamped& object_target_pose, con
 		addPick(container, initial, side);
 		addPlace(container, container.findChild("pick/grasp"), side, object_target_pose);
 	});
+}
+
+Task* pickShake(const std::string& name, const std::string& side, unsigned int num)
+{
+	auto setup = [num](ContainerBase& container, Stage* initial, const std::string& side) {
+		addPick(container, initial, side);
+		char joint[20];
+		snprintf(joint, sizeof(joint), "%ca_W2", side[0]);
+		addShaking(container, side + "_arm", joint, num);
+	};
+	if (side == "both") {
+		return bimodalTask(name, setup);
+	} else {
+		Stage* initial;
+		Task* task = initAndFixCollisions(&initial);
+		task->stages()->setName(name);
+		setup(*task->stages(), initial, side);
+		return task;
+	}
 }
 
 Task* bimanualPickPlace(const geometry_msgs::PoseStamped& object_target_pose,

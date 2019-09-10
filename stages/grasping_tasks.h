@@ -52,6 +52,8 @@ Task* bimodalPick(const std::string& name="bimodal pick");
 Task* bimodalPickPlace(const geometry_msgs::PoseStamped& object_target_pose,
                        const std::string& name="bimodal pick + place");
 
+Task* pickShake(const std::string& name, const std::string& side="left", unsigned int num=3);
+
 Task* bimanualPickPlace(const geometry_msgs::PoseStamped& object_target_pose,
                         const std::string& name="bimanual pick + place");
 

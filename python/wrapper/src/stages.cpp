@@ -36,6 +36,8 @@ void export_mtc_stages()
 	bp::def("BimodalPickTask", &bimodalPick, bimodalPickOL()[bp::return_value_policy<bp::manage_new_object>()]);
 	bp::def("BimodalPickPlaceTask", &bimodalPickPlace, bimodalPickPlaceOL()[bp::return_value_policy<bp::manage_new_object>()]);
 
+	bp::def("PickShakeTask", &pickShake, bp::return_value_policy<bp::manage_new_object>());
+
 	bp::def("approachAndPush", &approachAndPush, bp::return_value_policy<bp::manage_new_object>());
 	bp::def("grasp", &grasp, bp::return_value_policy<bp::manage_new_object>());
 	bp::def("graspAndDrop", &graspAndDrop, bp::return_value_policy<bp::manage_new_object>());
