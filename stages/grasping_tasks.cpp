@@ -76,10 +76,6 @@ Task* initAndFixCollisions(Stage** initial_out) {
 
 	Stage* initial;
 	t.add(Stage::pointer(initial = new stages::CurrentState("current")));
-	t.add(Stage::pointer(initial =
-	      allowCollisions("allow fingertip-table collision", {"frame"},
-	{"rh_ffdistal", "rh_mfdistal", "rh_rfdistal", "rh_lfdistal", "rh_thdistal",
-	 "lh_ffdistal", "lh_mfdistal", "lh_rfdistal", "lh_lfdistal", "lh_thdistal"})));
 
 	auto fix = new stages::FixCollisionObjects();
 	fix->setMaxPenetration(0.02);
@@ -119,6 +115,18 @@ ContainerBase* addPick(ContainerBase& container, Stage* initial,
 
 	auto grasp = new stages::SimpleGrasp(std::unique_ptr<MonitoringGenerator>(grasp_generator));
 	grasp->setIKFrame(tool_frame);
+
+	// allow fingertip-table collision while closing the gripper
+	const Stage* close = grasp->findChild("close gripper");
+	std::vector<std::string> tips = {"rh_ffdistal", "rh_mfdistal", "rh_rfdistal", "rh_lfdistal", "rh_thdistal",
+	                                 "lh_ffdistal", "lh_mfdistal", "lh_rfdistal", "lh_lfdistal", "lh_thdistal"};
+   Stage* allow = allowCollisions("allow fingertip-table collision", {"frame"}, tips, true);
+	allow->setForwardedProperties(close->forwardedProperties());
+	grasp->insert(Stage::pointer(allow), 2);
+
+	allow = allowCollisions("forbid fingertip-table collision", {"frame"}, tips, false);
+	allow->setForwardedProperties(close->forwardedProperties());
+	grasp->insert(Stage::pointer(allow), 4);
 
 	// pick container, using the generated grasp generator
 	auto pick = new stages::Pick(Stage::pointer(grasp), name);
