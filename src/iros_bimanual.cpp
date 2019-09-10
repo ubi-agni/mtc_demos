@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
 		auto task = std::unique_ptr<Task>(bimanualPickPlace(pose));
 		task->setProperty("object", std::string("object"));
 		try {
-			if (task->plan())
+			if (task->plan(5))
 				task->introspection().publishSolution(*task->solutions().front());
 		} catch (const InitStageException &e) {
 			std::cerr << e << *task;

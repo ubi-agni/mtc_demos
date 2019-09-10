@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
 			std::cout << "spawning primitive type " << primitive_type << std::endl;
 			for (float x_pos = XMIN; x_pos <= XMAX+0.01 && ros::ok(); x_pos+=XSTEPS){
 				int max_rot_angle = 1;
-        // no rot for spheres, or for standing cylinders
+				// no rot for spheres, or for standing cylinders
 				//if ((lying && object_type == 3)|| object_type == 1)
 						max_rot_angle = ROTMAX;
 				for (unsigned int rot_angle = 0; rot_angle < max_rot_angle && ros::ok(); rot_angle+=ROTSTEPS){
