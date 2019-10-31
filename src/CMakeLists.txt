@@ -20,6 +20,9 @@ target_link_libraries(pr2_bimodal ${catkin_LIBRARIES} gtest)
 add_executable(pa10_bimodal pa10_bimodal.cpp)
 target_link_libraries(pa10_bimodal ${catkin_LIBRARIES} gtest)
 
+add_executable(pa10_grasp_provider pa10_grasp_provider.cpp)
+target_link_libraries(pa10_grasp_provider ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
+
 add_executable(kuka_bimodal kuka_bimodal.cpp)
 target_link_libraries(kuka_bimodal ${PROJECT_NAME}_stages ${catkin_LIBRARIES} gtest)
 

@@ -1,8 +1,8 @@
- <launch>
-	<include file="$(find kuka_shadow_floka_moveit_config)/launch/planning_context.launch">
+<launch>
+	<include file="$(find pa10_shadow_moveit_config)/launch/planning_context.launch">
 		<arg name="load_robot_description" value="true"/>
 	</include>
-	<include file="$(find kuka_shadow_floka_moveit_config)/launch/move_group.launch">
+	<include file="$(find pa10_shadow_moveit_config)/launch/move_group.launch">
 		<arg name="allow_trajectory_execution" value="true"/>
 		<arg name="fake_execution" value="true"/>
 		<arg name="info" value="true"/>
@@ -22,5 +22,6 @@
 	</node>
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
 
-	<test pkg="mtc_demos" type="kuka_bimodal" test-name="kuka_bimodal" args="nowait"/>
+	<node name="pa10" pkg="mtc_demos" type="pa10_grasp_provider"/>
+	<node name="rviz" pkg="rviz" type="rviz" args="-d pa10"/>
 </launch>
