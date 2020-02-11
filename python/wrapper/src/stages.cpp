@@ -1,49 +1,39 @@
-#include <boost/python.hpp>
-#include <boost/python/stl_iterator.hpp>
-
-#include <moveit/python/python_tools/conversions.h>
 #include <moveit/python/task_constructor/properties.h>
 #include <stages/grasp_provider.h>
 #include <stages/generate_touch_pose.h>
 #include <stages/grasping_tasks.h>
 #include <stages/automatica.h>
 
-namespace bp = boost::python;
+namespace py = pybind11;
 using namespace moveit::task_constructor;
 using namespace moveit::task_constructor::stages;
+
+PYBIND11_SMART_HOLDER_TYPE_CASTERS(moveit::task_constructor::stages::GenerateTouchPose)
 
 namespace moveit {
 namespace python {
 
-namespace {
-BOOST_PYTHON_FUNCTION_OVERLOADS(pickOL, pick, 0, 2);
-BOOST_PYTHON_FUNCTION_OVERLOADS(pickPlaceOL, pickPlace, 1, 3);
-BOOST_PYTHON_FUNCTION_OVERLOADS(bimodalPickOL, bimodalPick, 0, 1);
-BOOST_PYTHON_FUNCTION_OVERLOADS(bimodalPickPlaceOL, bimodalPickPlace, 1, 2);
-}
-
-void export_mtc_stages()
+void export_mtc_stages(pybind11::module& m)
 {
+	properties::class_<GenerateTouchPose, GenerateGraspPose>(m, "GenerateTouchPose")
+		.def(py::init<const std::string&>(), py::arg("name") = std::string("touch_pose"));
 
-	properties::class_<GenerateTouchPose, std::auto_ptr<GenerateTouchPose>, bp::bases<GenerateGraspPose>, boost::noncopyable>
-	      ("GenerateTouchPose", bp::init<bp::optional<const std::string&>>())
-	      ;
-	bp::implicitly_convertible<std::auto_ptr<GenerateTouchPose>, std::auto_ptr<Stage>>();
+	m.def("PickTask", &pick, py::arg("name") = std::string("pick"), py::arg("side") = std::string("right"));
+	m.def("PickPlaceTask", &pickPlace, py::arg("object_target_pose"),
+	      py::arg("name") = std::string("pick + place"), py::arg("side") = std::string("right"));
 
-	bp::def("PickTask", &pick, pickOL()[bp::return_value_policy<bp::manage_new_object>()]);
-	bp::def("PickPlaceTask", &pickPlace, pickPlaceOL()[bp::return_value_policy<bp::manage_new_object>()]);
+	m.def("BimodalPickTask", &bimodalPick, py::arg("name") = std::string("bimodal pick"));
+	m.def("BimodalPickPlaceTask", &bimodalPickPlace, py::arg("object_target_pose"),
+	      py::arg("name") = std::string("bimodal pick + place"));
 
-	bp::def("BimodalPickTask", &bimodalPick, bimodalPickOL()[bp::return_value_policy<bp::manage_new_object>()]);
-	bp::def("BimodalPickPlaceTask", &bimodalPickPlace, bimodalPickPlaceOL()[bp::return_value_policy<bp::manage_new_object>()]);
+	m.def("PickShakeTask", &pickShake, py::arg("name"), py::arg("side") = std::string("left"), py::arg("num") = 3u);
 
-	bp::def("PickShakeTask", &pickShake, bp::return_value_policy<bp::manage_new_object>());
+	m.def("approachAndPush", &approachAndPush, py::arg("name"), py::arg("side"));
+	m.def("grasp", &grasp, py::arg("name"), py::arg("side"));
+	m.def("graspAndDrop", &graspAndDrop, py::arg("name"), py::arg("side"));
 
-	bp::def("approachAndPush", &approachAndPush, bp::return_value_policy<bp::manage_new_object>());
-	bp::def("grasp", &grasp, bp::return_value_policy<bp::manage_new_object>());
-	bp::def("graspAndDrop", &graspAndDrop, bp::return_value_policy<bp::manage_new_object>());
-
-	bp::def("juggleStart", &juggleStart, bp::return_value_policy<bp::manage_new_object>());
-	bp::def("juggle", &juggle, bp::return_value_policy<bp::manage_new_object>());
+	m.def("juggleStart", &juggleStart);
+	m.def("juggle", &juggle);
 }
 
 } }
