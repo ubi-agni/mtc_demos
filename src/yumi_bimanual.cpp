@@ -9,6 +9,7 @@
 #include <moveit/task_constructor/stages/modify_planning_scene.h>
 
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
+#include <moveit/task_constructor/solvers/joint_interpolation.h>
 #include <moveit/task_constructor/solvers/cartesian_path.h>
 
 #include <ros/ros.h>
@@ -30,7 +31,7 @@ void spawnObjects() {
 	o.primitive_poses.resize(1);
 	o.primitive_poses[0].position.x = 0.5;
 	o.primitive_poses[0].position.y = 0.0;
-	o.primitive_poses[0].position.z = 0.1;
+	o.primitive_poses[0].position.z = 0.101;
 	o.primitive_poses[0].orientation.w = 1.0;
 	o.primitives.resize(1);
 	o.primitives[0].type = shape_msgs::SolidPrimitive::CYLINDER;
@@ -108,7 +109,6 @@ Task createTask() {
 		auto merger = new Merger("approach");
 		for (const auto& eef : {eef_left, eef_right}) {
 			auto move = new stages::MoveRelative("approach " + eef, cartesian);
-			move->restrictDirection(stages::MoveRelative::BACKWARD);
 			move->setProperty("marker_ns", std::string("approach"));
 			const moveit::core::JointModelGroup* eef_jmg = t.getRobotModel()->getEndEffector(eef);
 			const auto& group_link = eef_jmg->getEndEffectorParentGroup();
@@ -153,9 +153,10 @@ Task createTask() {
 
 	{  // close grippers
 		auto merger = new Merger("close grippers");
+		auto solver = std::make_shared<solvers::JointInterpolationPlanner>();
+
 		for (const auto& eef : {eef_left, eef_right}) {
-			auto move = new stages::MoveTo("close " + eef, pipeline);
-			move->restrictDirection(stages::MoveTo::FORWARD);
+			auto move = new stages::MoveTo("close " + eef, solver);
 			move->setGroup(t.getRobotModel()->getEndEffector(eef)->getName());
 			move->setGoal("closed");
 			merger->insert(std::unique_ptr<Stage>(move));
@@ -177,7 +178,6 @@ Task createTask() {
 		auto merger = new Merger("lift");
 		for (const auto& eef : {eef_left, eef_right}) {
 			auto move = new stages::MoveRelative("lift " + eef, cartesian);
-			move->restrictDirection(stages::MoveRelative::FORWARD);
 			move->setProperty("marker_ns", std::string("lift"));
 			const moveit::core::JointModelGroup* eef_jmg = t.getRobotModel()->getEndEffector(eef);
 			const auto& group_link = eef_jmg->getEndEffectorParentGroup();
@@ -199,7 +199,7 @@ TEST(Yumi, bimanual) {
 	spawnObjects();
 
 	try {
-		ASSERT_TRUE(t.plan()) << "planning failed" << std::endl << t;
+		EXPECT_TRUE(t.plan()) << "planning failed" << std::endl << t;
 	} catch (const InitStageException &e) {
 		ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
 	}
