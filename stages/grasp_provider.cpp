@@ -39,7 +39,7 @@
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_state/conversions.h>
 #include <rviz_marker_tools/marker_creation.h>
-#include <eigen_conversions/eigen_msg.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 namespace moveit { namespace task_constructor { namespace stages {
 
@@ -88,8 +88,8 @@ void GraspProvider::onNewSolution(const SolutionBase& s)
 			Eigen::Isometry3d link_pose, object_pose;
 			link_pose = scene->getCurrentState().getGlobalLinkTransform(collision_object.header.frame_id);
 			for (auto& pose_msg : collision_object.primitive_poses) {
-				tf::poseMsgToEigen(pose_msg, object_pose);
-				tf::poseEigenToMsg(link_pose * object_pose, pose_msg);
+				tf2::fromMsg(pose_msg, object_pose);
+				pose_msg = tf2::toMsg(link_pose * object_pose);
 			}
 #endif
 		}
@@ -152,7 +152,7 @@ void GraspProvider::compute()
 	// append object frame
 	geometry_msgs::PoseStamped pose_msg;
 	pose_msg.header.frame_id = scene->getPlanningFrame();
-	tf::poseEigenToMsg(scene->getFrameTransform(properties().get<std::string>("object")), pose_msg.pose);
+	pose_msg.pose = tf2::toMsg(scene->getFrameTransform(properties().get<std::string>("object")));
 	rviz_marker_tools::appendFrame(solution.markers(), pose_msg, 0.1, "object frame");
 
 	spawn(std::move(state), std::move(solution));

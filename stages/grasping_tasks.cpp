@@ -54,7 +54,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PointStamped.h>
-#include <eigen_conversions/eigen_msg.h>
+#include <tf2_eigen/tf2_eigen.h>
 #include <tf/tf.h>
 #include <angles/angles.h>
 
@@ -205,7 +205,7 @@ ContainerBase* addShaking(ContainerBase& container, const std::string& group, co
 	auto interpolate = std::make_shared<solvers::JointInterpolationPlanner>();
 	std::map<std::string, double> joint_deltas;
 
-	for (int i = 0; i < num; ++i)
+	for (unsigned int i = 0; i < num; ++i)
 	{
 		char name[20];
 		{
@@ -362,7 +362,7 @@ Task* bimanualPickPlace(const geometry_msgs::PoseStamped& object_target_pose,
 			Eigen::Quaterniond base(Eigen::AngleAxisd(x * M_PI/2., Eigen::Vector3d::UnitX()));
 			for (int z=0; z < 4; ++z) {  // rotation about world's z-axis
 				Eigen::Quaterniond rot = Eigen::AngleAxisd(z * M_PI/2., Eigen::Vector3d::UnitZ()) * base;
-				tf::quaternionEigenToMsg(Eigen::Quaterniond(rot), pose.pose.orientation);
+				pose.pose.orientation = tf2::toMsg(rot);
 				poses->addPose(pose);
 			}
 		}

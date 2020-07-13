@@ -13,7 +13,7 @@
   <depend>moveit_ros_planning_interface</depend>
   <depend>moveit_task_constructor_core</depend>
   <depend>rviz_marker_tools</depend>
-  <depend>eigen_conversions</depend>
+  <depend>tf2_eigen</depend>
   <depend>grasping_msgs</depend>
 
   <export>

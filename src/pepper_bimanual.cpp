@@ -13,7 +13,7 @@
 
 #include <ros/ros.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <eigen_conversions/eigen_msg.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 #include <gtest/gtest.h>
 #include "test_utils.h"
@@ -53,14 +53,12 @@ Task createTask(const std::string& object = "object") {
 
 	geometry_msgs::PoseStamped ik_frame_left;
 	ik_frame_left.header.frame_id = "l_grasp_frame";
-	tf::poseEigenToMsg(Eigen::Translation3d(0.0,0.05,0.0) *
-	                   Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()),
-	                   ik_frame_left.pose);
+	ik_frame_left.pose = tf2::toMsg(Eigen::Translation3d(0.0,0.05,0.0) *
+	                                Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()));
 
 	geometry_msgs::PoseStamped ik_frame_right;
 	ik_frame_right.header.frame_id = "r_grasp_frame";
-	tf::poseEigenToMsg(Eigen::Isometry3d(Eigen::Translation3d(0.0,0.05,0.0)),
-	                   ik_frame_right.pose);
+	ik_frame_right.pose = tf2::toMsg(Eigen::Isometry3d(Eigen::Translation3d(0.0,0.05,0.0)));
 
 
 	// cartesian planner

@@ -43,7 +43,7 @@
 #include <geometric_shapes/shapes.h>
 
 #include <Eigen/Geometry>
-#include <eigen_conversions/eigen_msg.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 namespace moveit { namespace task_constructor { namespace stages {
 
@@ -131,8 +131,8 @@ void BimanualGraspPose::compute(){
 		pose.pose.position.y = +yoffset;
 		// ...and turned 180° about z
 		Eigen::Quaterniond q;
-		tf::quaternionMsgToEigen(pose.pose.orientation, q);
-		tf::quaternionEigenToMsg(q * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()), pose.pose.orientation);
+		tf2::fromMsg(pose.pose.orientation, q);
+		pose.pose.orientation = tf2::toMsg(q * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
 		state.properties().set("target_pose_left", pose);
 		rviz_marker_tools::appendFrame(trajectory.markers(), pose, 0.1, "grasp frame/left");
 
@@ -163,8 +163,7 @@ void BimanualGraspPose::compute(){
 		double angle = -M_PI / 4.;
 		double delta = props.get<double>("angle_delta");
 		while (angle < M_PI / 4.) {
-			tf::quaternionEigenToMsg(Eigen::Quaterniond(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ())),
-			                         target_pose.pose.orientation);
+			target_pose.pose.orientation = tf2::toMsg(Eigen::Quaterniond(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ())));
 			spawnSolution(target_pose, radius);
 			angle += delta;
 		}
@@ -180,8 +179,7 @@ void BimanualGraspPose::compute(){
 			double z = -zmax;
 			while (z <= zmax) {
 				target_pose.pose.position.z = z;
-				tf::quaternionEigenToMsg(Eigen::Quaterniond(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ())),
-				                         target_pose.pose.orientation);
+				target_pose.pose.orientation = tf2::toMsg(Eigen::Quaterniond(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ())));
 				spawnSolution(target_pose, radius, std::abs(z));
 				z += linear_delta;
 			}

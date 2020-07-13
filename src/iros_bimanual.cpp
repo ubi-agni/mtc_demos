@@ -1,7 +1,7 @@
 #include <stages/grasping_tasks.h>
 #include <ros/ros.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <eigen_conversions/eigen_msg.h>
+#include <tf2_eigen/tf2_eigen.h>
 #include <random_numbers/random_numbers.h>
 #include "test_utils.h"
 
@@ -11,7 +11,6 @@ static random_numbers::RandomNumberGenerator rng;
 
 void spawnObjects(int primitive, geometry_msgs::PoseStamped& pose_msg) {
 	moveit::planning_interface::PlanningSceneInterface psi;
-	double quat[4];  // x y z w
 
 	// random rotation about z-axis
 	Eigen::Isometry3d pose = Eigen::AngleAxisd(20./180.*M_PI, Eigen::Vector3d::UnitZ())
@@ -34,6 +33,7 @@ void spawnObjects(int primitive, geometry_msgs::PoseStamped& pose_msg) {
 	case shape_msgs::SolidPrimitive::CYLINDER:
 		o.primitives[0].dimensions = {height, radius};
 		if (int lying = 1) { // rng.uniformInteger(0, 1)) {
+			(void)lying;
 			o.primitive_poses[0].position.z = radius;
 			pose = pose * Eigen::AngleAxisd(M_PI/2., Eigen::Vector3d::UnitY());
 		}
@@ -60,7 +60,7 @@ void spawnObjects(int primitive, geometry_msgs::PoseStamped& pose_msg) {
 		}
 		break;
 	}
-	tf::quaternionEigenToMsg(Eigen::Quaterniond(pose.rotation()), o.primitive_poses[0].orientation);
+	o.primitive_poses[0].orientation = tf2::toMsg(Eigen::Quaterniond(pose.rotation()));
 	psi.applyCollisionObject(o);
 
 	pose_msg.header.frame_id = o.header.frame_id;
@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
 		pose.pose.position.x = 0.7;
 		pose.pose.position.y = 0.3;
 		pose.pose.position.z = 0.25 / 2.0 + 0.01;
-		tf::quaternionEigenToMsg(Eigen::Quaterniond::Identity(), pose.pose.orientation);
+		pose.pose.orientation = tf2::toMsg(Eigen::Quaterniond::Identity());
 
 		auto task = std::unique_ptr<Task>(bimanualPickPlace(pose));
 		task->setProperty("object", std::string("object"));

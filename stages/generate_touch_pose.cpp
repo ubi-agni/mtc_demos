@@ -37,7 +37,7 @@
 #include "generate_touch_pose.h"
 #include <rviz_marker_tools/marker_creation.h>
 #include <moveit/planning_scene/planning_scene.h>
-#include <eigen_conversions/eigen_msg.h>
+#include <tf2_eigen/tf2_eigen.h>
 #include <geometric_shapes/shape_operations.h>
 #include <moveit/robot_model/aabb.h>
 #include <Eigen/Geometry>
@@ -99,17 +99,15 @@ void GenerateTouchPose::compute()
 
 	geometry_msgs::PoseStamped pose;
 	pose.header.frame_id = scene->getPlanningFrame();
-	Eigen::Vector3d top = touchPoint(scene->getWorld()->getObject(object));
-	tf::pointEigenToMsg(top, pose.pose.position);
+	pose.pose.position = tf2::toMsg(touchPoint(scene->getWorld()->getObject(object)));
 
 	double current_angle_ = 0.0;
 	while (current_angle_ < 2.*M_PI && current_angle_ > -2.*M_PI) {
 		// rotate object pose about z-axis
-		Eigen::Quaterniond q(Eigen::AngleAxisd(current_angle_, Eigen::Vector3d::UnitZ()));
+		pose.pose.orientation = tf2::toMsg(Eigen::Quaterniond(Eigen::AngleAxisd(current_angle_, Eigen::Vector3d::UnitZ())));
 		current_angle_ += props.get<double>("angle_delta");
 
 		InterfaceState state(scene);
-		tf::quaternionEigenToMsg(q, pose.pose.orientation);
 		state.properties().set("target_pose", pose);
 
 		SubTrajectory trajectory;

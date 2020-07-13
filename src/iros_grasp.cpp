@@ -1,7 +1,7 @@
 #include <stages/grasping_tasks.h>
 #include <ros/ros.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <eigen_conversions/eigen_msg.h>
+#include <tf2_eigen/tf2_eigen.h>
 #include <random_numbers/random_numbers.h>
 #include "test_utils.h"
 #include <iostream>
@@ -60,7 +60,7 @@ void spawnObject(moveit::planning_interface::PlanningSceneInterface &psi, int pr
 		pose = Eigen::Quaterniond(quat);
 		break;
 	}
-	tf::quaternionEigenToMsg(Eigen::Quaterniond(pose.rotation()), o.primitive_poses[0].orientation);
+	o.primitive_poses[0].orientation = tf2::toMsg(Eigen::Quaterniond(pose.rotation()));
 	psi.applyCollisionObject(o);
 
 	pose_msg.header.frame_id = o.header.frame_id;
@@ -92,6 +92,7 @@ void spawnObjects(moveit::planning_interface::PlanningSceneInterface &psi, int p
 	case shape_msgs::SolidPrimitive::CYLINDER:
 		o.primitives[0].dimensions = {height, radius};
 		if (int lying = rng.uniformInteger(0, 1)) {
+			(void)lying;
 			o.primitive_poses[0].position.z = radius;
 			pose = pose * Eigen::AngleAxisd(M_PI/2., Eigen::Vector3d::UnitY());
 		}
@@ -118,7 +119,7 @@ void spawnObjects(moveit::planning_interface::PlanningSceneInterface &psi, int p
 		pose = Eigen::Quaterniond(quat);
 		break;
 	}
-	tf::quaternionEigenToMsg(Eigen::Quaterniond(pose.rotation()), o.primitive_poses[0].orientation);
+	o.primitive_poses[0].orientation = tf2::toMsg(Eigen::Quaterniond(pose.rotation()));
 	psi.applyCollisionObject(o);
 
 	pose_msg.header.frame_id = o.header.frame_id;
@@ -198,7 +199,7 @@ int main(int argc, char** argv) {
 		for (unsigned int primitive_type = object_type; primitive_type < object_type+1 && ros::ok(); primitive_type++){
 			std::cout << "spawning primitive type " << primitive_type << std::endl;
 			for (float x_pos = XMIN; x_pos <= XMAX+0.01 && ros::ok(); x_pos+=XSTEPS){
-				int max_rot_angle = 1;
+				unsigned int max_rot_angle = 1;
 				// no rot for spheres, or for standing cylinders
 				//if ((lying && object_type == 3)|| object_type == 1)
 						max_rot_angle = ROTMAX;
@@ -213,7 +214,7 @@ int main(int argc, char** argv) {
 					pose.pose.position.x = 0.0;
 					pose.pose.position.y = 0.3;
 					pose.pose.position.z = 0.25 / 2.0 + 0.01;
-					tf::quaternionEigenToMsg(Eigen::Quaterniond::Identity(), pose.pose.orientation);
+					pose.pose.orientation = tf2::toMsg(Eigen::Quaterniond::Identity());
 
 					auto task = std::unique_ptr<Task>(bimodalPickPlace(pose));
 					task->setProperty("object", std::string("object"));
