@@ -55,6 +55,7 @@ BimanualGraspPose::BimanualGraspPose(const std::string& name)
 	p.declare<std::string>("object");
 	p.declare<double>("linear_delta", 0.02, "linear distance between grasp poses");
 	p.declare<double>("angle_delta", 0.1, "angular distance between grasp poses (rad)");
+	p.declare<double>("z_offset", 0.0, "z-offset between both hands");
 }
 
 void BimanualGraspPose::init(const core::RobotModelConstPtr& robot_model)
@@ -119,19 +120,23 @@ void BimanualGraspPose::compute(){
 	target_pose.header.frame_id = object_name;
 	target_pose.pose.orientation.w = 1.0;
 
-	auto spawnSolution = [this, scene](geometry_msgs::PoseStamped pose, double yoffset, double cost = 0.0) {
+	auto spawnSolution = [this, scene](geometry_msgs::PoseStamped pose, double yoffset, double zoffset, double cost = 0.0) {
 		moveit::task_constructor::InterfaceState state(scene);
 		moveit::task_constructor::SubTrajectory trajectory;
-		// right is shifted by -offset
-		pose.pose.position.y = -yoffset;
+		Eigen::Quaterniond q;
+		tf2::fromMsg(pose.pose.orientation, q);
+		Eigen::Vector3d p;
+		tf2::fromMsg(pose.pose.position, p);
+		Eigen::Vector3d offset = q * Eigen::Vector3d::UnitY();
+
+		// right is shifted by -offset along y
+		pose.pose.position = tf2::toMsg(Eigen::Vector3d(p - yoffset * offset));
 		state.properties().set("target_pose_right", pose);
 		rviz_marker_tools::appendFrame(trajectory.markers(), pose, 0.1, "grasp frame/right");
 
-		// left is shifted by +offset
-		pose.pose.position.y = +yoffset;
-		// ...and turned 180° about z
-		Eigen::Quaterniond q;
-		tf2::fromMsg(pose.pose.orientation, q);
+		// left is shifted by +offset along y + zoffset along z
+		pose.pose.position = tf2::toMsg(Eigen::Vector3d(p + yoffset * offset + zoffset * (q * Eigen::Vector3d::UnitZ())));
+		// ... and turned 180° about z
 		pose.pose.orientation = tf2::toMsg(q * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
 		state.properties().set("target_pose_left", pose);
 		rviz_marker_tools::appendFrame(trajectory.markers(), pose, 0.1, "grasp frame/left");
@@ -144,6 +149,7 @@ void BimanualGraspPose::compute(){
 	switch(shape->type) {
 	case(shapes::ShapeType::BOX): {
 		const double *size = std::static_pointer_cast<const shapes::Box>(shape)->size;
+		double zoffset = props.get<double>("z_offset");
 		double delta = props.get<double>("linear_delta");
 		double xmax = size[0] / 2.0, x = -xmax;
 		while (x <= xmax) {
@@ -151,7 +157,7 @@ void BimanualGraspPose::compute(){
 			while (z <= zmax) {
 				target_pose.pose.position.x = x;
 				target_pose.pose.position.z = z;
-				spawnSolution(target_pose, size[1] / 2.0, std::abs(x) + std::abs(z));
+				spawnSolution(target_pose, size[1] / 2.0, zoffset, std::abs(x) + std::abs(z));
 				z += delta;
 			}
 			x += delta;
@@ -161,15 +167,17 @@ void BimanualGraspPose::compute(){
 	case(shapes::ShapeType::SPHERE): {
 		double radius = std::static_pointer_cast<const shapes::Sphere>(shape)->radius;
 		double angle = -M_PI / 4.;
+		double zoffset = props.get<double>("z_offset");
 		double delta = props.get<double>("angle_delta");
 		while (angle < M_PI / 4.) {
 			target_pose.pose.orientation = tf2::toMsg(Eigen::Quaterniond(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ())));
-			spawnSolution(target_pose, radius);
+			spawnSolution(target_pose, radius, zoffset);
 			angle += delta;
 		}
 		break;
 	}
 	case(shapes::ShapeType::CYLINDER): {
+		double zoffset = props.get<double>("z_offset");
 		double linear_delta = props.get<double>("linear_delta");
 		double angle_delta = props.get<double>("angle_delta");
 		double radius = std::static_pointer_cast<const shapes::Cylinder>(shape)->radius;
@@ -177,13 +185,12 @@ void BimanualGraspPose::compute(){
 		double angle = -M_PI / 4.;
 		while (angle < M_PI / 4.) {
 			double z = -zmax;
-			while (z <= zmax) {
+			while (z + zoffset <= zmax) {
 				target_pose.pose.position.z = z;
 				target_pose.pose.orientation = tf2::toMsg(Eigen::Quaterniond(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ())));
-				spawnSolution(target_pose, radius, std::abs(z));
+				spawnSolution(target_pose, radius, zoffset, std::abs(z));
 				z += linear_delta;
 			}
-			spawnSolution(target_pose, radius);
 			angle += angle_delta;
 		}
 		break;

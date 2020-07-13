@@ -64,12 +64,12 @@ Task createTask() {
 
 	geometry_msgs::PoseStamped ik_frame_left;
 	ik_frame_left.header.frame_id = "yumi_link_7_l";
-	ik_frame_left.pose = tf2::toMsg(Eigen::Translation3d(0.0, 0.0, 0.13) *
+	ik_frame_left.pose = tf2::toMsg(Eigen::Translation3d(0.0, 0.05, 0.13) *
 	                                Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()));
 
 	geometry_msgs::PoseStamped ik_frame_right;
 	ik_frame_right.header.frame_id = "yumi_link_7_r";
-	ik_frame_right.pose = tf2::toMsg(Eigen::Translation3d(0.0, 0.0, 0.13) *
+	ik_frame_right.pose = tf2::toMsg(Eigen::Translation3d(0.0, -0.05, 0.13) *
 	                                 Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX()));
 
 	std::string eef_left = "left_hand";
@@ -127,6 +127,7 @@ Task createTask() {
 		gengrasp->setMonitoredStage(referenced_stage);
 		gengrasp->setObject(object);
 		gengrasp->setEndEffectorPoses({{eef_left, "open"}, {eef_right, "open"}});
+		gengrasp->setProperty("z_offset", 0.05);
 
 		// inner IK: right hand
 		auto ik_inner = new stages::ComputeIK("compute ik right", std::unique_ptr<Stage>(gengrasp));
