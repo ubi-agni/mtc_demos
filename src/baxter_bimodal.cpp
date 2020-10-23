@@ -108,6 +108,7 @@ TEST(Baxter, bimodal) {
 
 		spawnObject(pos);
 		try {
+			t.reset();
 			t.plan();
 		} catch (const InitStageException &e) {
 			ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
