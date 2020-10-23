@@ -17,7 +17,7 @@
 #include "test_utils.h"
 
 using namespace moveit::task_constructor;
-bool do_pause = false;
+bool do_wait = false;
 
 void spawnObject(double pos) {
 	moveit::planning_interface::PlanningSceneInterface psi;
@@ -128,7 +128,7 @@ TEST(Baxter, bimodal) {
 	EXPECT_LE((double)failures / (successes + failures), 0.2) << "failure rate too high";
 	EXPECT_GE((double)solutions / successes, 20) << "avg number of solutions too small";
 
-	if (do_pause) waitForKey();
+	if (do_wait) ros::waitForShutdown();
 }
 
 int main(int argc, char** argv){
@@ -137,6 +137,6 @@ int main(int argc, char** argv){
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
 
-	do_pause = doPause(argc, argv);
+	do_wait = doWait(argc, argv);
 	return RUN_ALL_TESTS();
 }
