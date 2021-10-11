@@ -5,7 +5,7 @@ pybind11_add_module(${STAGES_LIB_NAME} MODULE
 	${CMAKE_CURRENT_BINARY_DIR}/stages.cpp
 )
 target_link_libraries(${STAGES_LIB_NAME} PRIVATE
-	${PROJECT_NAME}_stages)
+	${PROJECT_NAME}_stages ${catkin_LIBRARIES})
 
 
 set(MOVEIT_PYTHON_MODULE_PATH mtc_demos)
