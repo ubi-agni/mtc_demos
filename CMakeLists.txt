@@ -1,11 +1,5 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.10.2)
 project(mtc_demos)
-
-if ("${CMAKE_VERSION}" VERSION_LESS "3.1")
-	add_compile_options(-std=c++14)
-else ()
-	set(CMAKE_CXX_STANDARD 14)
-endif ()
 
 find_package(catkin REQUIRED COMPONENTS
 	moveit_ros_planning_interface
